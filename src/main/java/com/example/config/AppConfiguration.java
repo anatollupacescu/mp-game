@@ -8,14 +8,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.example.StockServiceWebSocket;
-import com.example.bean.Service;
 
 @Configuration
 public class AppConfiguration {
-
-	public @Bean Service service() {
-		return new Service();
-	}
 
 	public @Bean Server server() {
 		Server server = new Server(8090);

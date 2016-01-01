@@ -1,10 +1,39 @@
 <html>
+<head>
+	<script type="text/javascript" src="stocks.js"></script>
+	<style>
+	table, td {
+	    border: 1px solid black;
+	    border-collapse: collapse;
+	}
+	td {
+	    padding: 20px;
+	}
+	</style>
+</head>
 <body>
     <h1>Web Socket Sample</h1>
-    <script src="stocks.js"></script>
- 
-    <button onclick="sendToServer('start')">Start</button>
-    <button onclick="sendToServer('stop')">Stop!</button><br/><br/>
-    <textarea id="log" rows="20" cols="90"></textarea>
+    <div>
+    	Name: <input type=text size=30 id='name'/> <button onclick="startGame(document.getElementById('name').value)">Start</button>
+    </div>
+    <div id=gameDiv style="display: block;float:center" align=center>
+    	<table>
+    		<script>
+    			var size = 8;
+				for(var i = 0; i < size; i++) {
+					document.write("<tr>");
+					for(var j = 0; j < size; j++) {
+						var cellId = (i*size+j);
+						document.write("<td onclick='cellClicked(" + cellId + ")'/>");
+					}
+					document.write("</tr>");
+				}
+			</script>
+    	</table>
+    </div>
+    <hr/>
+    <div align=center width=100%>
+    	<textarea id="log" rows="20" cols="90"></textarea>
+    </div>
 </body>
 </html>

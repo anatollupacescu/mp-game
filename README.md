@@ -1,2 +1,2 @@
 # mp-game
-Multi player game (presentation purpose only)
+Multi player game using jetty web sockets (presentation purpose only)

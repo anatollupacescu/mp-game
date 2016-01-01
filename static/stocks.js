@@ -12,7 +12,6 @@ function startGame(name) {
         action: 'startGame',
         data: name
     }));
-    document.getElementById('gameDiv').style.display = 'block';
 }
 
 // called when socket connection established
@@ -22,12 +21,11 @@ ws.onopen = function() {
 
 // called when a message received from server
 ws.onmessage = function (evt) {
-	
-	alert(evt.data)
-	
-	appendLog(JSON.parse(evt.data).name)
-	
-	
+	var obj = JSON.parse(evt.data)
+	appendLog(obj.data)
+	var cellId = obj.data
+	var cell = document.getElementById(cellId)
+	cell.style.backgroundColor="green" //"#FF0000"
 };
 
 // called when socket connection closed

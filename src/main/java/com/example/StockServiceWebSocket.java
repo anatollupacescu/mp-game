@@ -38,12 +38,9 @@ public class StockServiceWebSocket {
 		GameCommand gameCommand = mapper.fromJson(message, GameCommand.class);
 		switch (gameCommand.getAction()) {
 		case startGame:
-			send(message);
-			break;
 		case cellClick:
-			send("{\"name\":1}");
 		default:
-			break;
+			send(message);
 		}
 	}
 

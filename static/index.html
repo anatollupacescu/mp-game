@@ -24,7 +24,7 @@
 					document.write("<tr>");
 					for(var j = 0; j < size; j++) {
 						var cellId = (i*size+j);
-						document.write("<td onclick='cellClicked(" + cellId + ")'/>");
+						document.write("<td onclick='cellClicked(" + cellId + ")' id='" + cellId + "'></td>");
 					}
 					document.write("</tr>");
 				}

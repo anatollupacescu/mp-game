@@ -22,11 +22,12 @@ ws.onopen = function() {
 
 // called when a message received from server
 ws.onmessage = function (evt) {
-	if(evt.action == 'startGame') {
-		appendLog('gameStarted')
-	} else {
-		appendLog(evt)
-	}
+	
+	alert(evt.data)
+	
+	appendLog(JSON.parse(evt.data).name)
+	
+	
 };
 
 // called when socket connection closed

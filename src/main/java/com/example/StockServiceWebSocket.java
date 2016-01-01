@@ -41,7 +41,7 @@ public class StockServiceWebSocket {
 			send(message);
 			break;
 		case cellClick:
-			send("lol");
+			send("{\"name\":1}");
 		default:
 			break;
 		}

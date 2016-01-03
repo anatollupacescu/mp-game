@@ -12,11 +12,15 @@
 	</style>
 </head>
 <body>
-    <h1>Web Socket Sample</h1>
-    <div>
-    	Name: <input type=text size=30 id='name'/> <button onclick="startGame(document.getElementById('name').value)">Start</button>
+    <h1>Multi player example</h1>
+    <div id=login align=center>
+    	Name: <input type=text size=30 id='name'/> <button onclick="connect(document.getElementById('name').value)">Start</button>
     </div>
-    <div id=gameDiv style="display: block;float:center" align=center>
+    <hr/>
+    <div float=left style="width:37%; display:inline-block;">
+    	<select multiple size=14 id=users style="font-size: 20px"></select>
+    </div>
+    <div id=gameDiv style="display:inline-block">
     	<table>
     		<script>
     			var size = 8;
@@ -33,7 +37,7 @@
     </div>
     <hr/>
     <div align=center width=100%>
-    	<textarea id="log" rows="20" cols="90"></textarea>
+    	<textarea id="log" rows="10" cols="50"></textarea>
     </div>
 </body>
 </html>

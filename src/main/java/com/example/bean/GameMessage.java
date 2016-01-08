@@ -2,23 +2,28 @@ package com.example.bean;
 
 public class GameMessage {
 
-	private GameAction action;
-	
-	private Object data;
+    public GameMessage(GameAction action, Object data) {
+        this.action = action;
+        this.data = data;
+    }
 
-	public GameAction getAction() {
-		return action;
-	}
+    private GameAction action;
 
-	public void setAction(GameAction action) {
-		this.action = action;
-	}
+    private Object data;
 
-	public Object getData() {
-		return data;
-	}
+    public GameAction getAction() {
+        return action;
+    }
 
-	public void setData(Object data) {
-		this.data = data;
-	}
+    public void setAction(GameAction action) {
+        this.action = action;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
+    }
 }

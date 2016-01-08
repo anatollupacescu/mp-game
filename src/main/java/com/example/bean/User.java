@@ -1,28 +1,36 @@
 package com.example.bean;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.websocket.api.Session;
 
 public class User {
 
-	public final Session session;
-	
-	public final String name;
+    public final Session session;
+    public final String name;
+    public final int color;
 
-	public User(Session session, String name) {
-		super();
-		this.session = session;
-		this.name = name;
-	}
+    public boolean ready;
+    private int cellCount;
 
-	public void sendMessage(String str) {
-		try {
-			if (session.isOpen()) {
-				session.getRemote().sendString(str);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    public User(Session session, int color, String name) {
+        super();
+        this.session = session;
+        this.color = color;
+        this.name = name;
+    }
+
+    public void isReady(boolean b) {
+        this.ready = b;
+    }
+
+    public boolean remainingCellCountIs(int remainingCellCount) {
+        return this.cellCount == remainingCellCount;
+    }
+
+    public void decrementCellCount() {
+        cellCount--;
+    }
+
+    public void setInitialCellCount(int cellCount) {
+        this.cellCount = cellCount;
+    }
 }

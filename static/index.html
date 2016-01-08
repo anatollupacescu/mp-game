@@ -1,43 +1,47 @@
 <html>
 <head>
-	<script type="text/javascript" src="stocks.js"></script>
-	<style>
-	table, td {
-	    border: 1px solid black;
-	    border-collapse: collapse;
-	}
-	td {
-	    padding: 20px;
-	}
-	</style>
+    <script type="text/javascript" src="stocks.js"></script>
+    <style>
+        table, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Multi player example</h1>
-    <div id=login align=center>
-    	Name: <input type=text size=30 id='name'/> <button onclick="connect(document.getElementById('name').value)">Start</button>
-    </div>
-    <hr/>
-    <div float=left style="width:37%; display:inline-block;">
-    	<select multiple size=14 id=users style="font-size: 20px"></select>
-    </div>
-    <div id=gameDiv style="display:inline-block">
-    	<table>
-    		<script>
-    			var size = 8;
-				for(var i = 0; i < size; i++) {
-					document.write("<tr>");
-					for(var j = 0; j < size; j++) {
-						var cellId = (i*size+j);
-						document.write("<td onclick='cellClicked(" + cellId + ")' id='" + cellId + "'></td>");
-					}
-					document.write("</tr>");
-				}
-			</script>
-    	</table>
-    </div>
-    <hr/>
-    <div align=center width=100%>
-    	<textarea id="log" rows="10" cols="50"></textarea>
-    </div>
+<h1>Multi player example</h1>
+<div id="start" align=center>
+    <input type="button" id="ready" value="Ready" style="display:none" onclick="ready()"/>
+</div>
+<div id=login align=center>
+    Name: <input type=text size=30 id='name'/>
+    <button onclick="connect()">Login</button>
+</div>
+<hr/>
+<div float=left style="width:37%; display:inline-block;">
+    <select multiple size=14 id=users style="font-size: 20px">
+        <option value="">Players Board</option>
+        <option value="">---------------------</option>
+    </select>
+</div>
+<div id=gameDiv style="display:inline-block">
+    <table>
+        <script>
+            var size = 8;
+            for (var i = 0; i < size; i++) {
+                document.write("<tr>");
+                for (var j = 0; j < size; j++) {
+                    var cellId = (i * size + j);
+                    document.write("<td onclick='cellClicked(" + cellId + ")' id='" + cellId + "'></td>");
+                }
+                document.write("</tr>");
+            }
+        </script>
+    </table>
+</div>
 </body>
 </html>

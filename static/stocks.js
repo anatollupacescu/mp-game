@@ -2,6 +2,7 @@ var ws = new WebSocket("ws://127.0.0.1:8090/stocks");
 
 var hasGrantStart = false;
 var colors = [null, "red", "green", "blue", "orange"]
+var gameInProgress = false;
 
 ws.onmessage = function (evt) {
     var obj = JSON.parse(evt.data)
@@ -14,15 +15,20 @@ ws.onmessage = function (evt) {
         refreshUserList(obj.data);
     } else if (obj.action == "logIn") {
         refreshUserList(obj.data);
-        document.getElementById("login").style.display = "none";
-        document.getElementById("ready").style.display = "block";
+        if (!gameInProgress) {
+            document.getElementById("login").style.display = "none"
+            document.getElementById("ready").style.display = "block"
+        }
+    } else if (obj.action == "pleaseWait") {
+        alert("Please wait - game in progress")
     } else if (obj.action == "ready") {
-        document.getElementById("ready").style.display = "none";
+        document.getElementById("ready").style.display = "none"
     } else if (obj.action == "grantStart") {
-        document.getElementById("ready").value = "Start game";
+        document.getElementById("ready").value = "Start game"
         hasGrantStart = true;
     } else if (obj.action == "startGame") {
-        document.getElementById("ready").style.display = "none";
+        document.getElementById("ready").style.display = "none"
+        gameInProgress = true;
         var arr = JSON.parse(obj.data)
         for (var i = 0; i < arr.length; i++) {
             var colorIndex = arr[i]
@@ -31,7 +37,7 @@ ws.onmessage = function (evt) {
             }
         }
     } else if (obj.action == "wrongColor") {
-        alert("Click your color only");
+        alert("Click your color only")
     } else if (obj.action == "winner") {
         alert("We have a winner: " + obj.data)
     } else if (obj.action == "gameOver") {

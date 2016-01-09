@@ -10,8 +10,6 @@ public class Game {
     private final List<Cell> table;
     private final List<User> users;
 
-    private boolean isOver = false;
-
     public Game(List<User> users) {
         this.table = new LinkedList<>();
         this.users = users;
@@ -46,15 +44,7 @@ public class Game {
     }
 
     public Optional<User> getWinner() {
-        Optional<User> winnerOpt = users.stream().filter(u -> u.remainingCellCountIs(0)).findFirst();
-        if (winnerOpt.isPresent() || users.size() == 1) {
-            isOver = true;
-        }
-        return winnerOpt;
-    }
-
-    public boolean isOver() {
-        return isOver;
+        return users.stream().filter(u -> u.remainingCellCountIs(0)).findFirst();
     }
 
     public List<Integer> colorsArray() {

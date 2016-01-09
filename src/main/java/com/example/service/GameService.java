@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 public class GameService {
 
     private static final Gson mapper = new GsonBuilder().create();
-    private static final List<User> users = new ArrayList<>();
+
+    private static List<User> users = new ArrayList<>();
 
     private static Game game;
 
@@ -47,7 +48,8 @@ public class GameService {
     private static void userReady(Session session, Object data) {
         if (Boolean.TRUE.equals(data)) {
             game = new Game(users);
-            broadcastMessage(new GameMessage(GameAction.startGame, gameAsJsonArray(game)));
+            List<Integer> jsonArrayList = game.colorsArray();
+            broadcastMessage(new GameMessage(GameAction.startGame, mapper.toJson(jsonArrayList)));
         } else {
             sendMessage(session, new GameMessage(GameAction.ready, null));
             lookupUser(session).get().isReady(true);
@@ -58,9 +60,36 @@ public class GameService {
         }
     }
 
-    private static String gameAsJsonArray(Game game) {
-        List<Integer> jsonArrayList = game.colorsArray();
-        return mapper.toJson(jsonArrayList);
+    public static void userConnect(Session session) {
+        sendMessage(session, userList(GameAction.connect));
+    }
+
+    public static void userLogIn(Session session, Object name) {
+        if(game != null) {
+            sendMessage(session, new GameMessage(GameAction.pleaseWait, null));
+        } else {
+            User user = new User(session, 1 + users.size(), (String) name);
+            users.add(user);
+            broadcastMessage(userList(GameAction.logIn));
+        }
+    }
+
+    public static void userDisconnect(Session session) {
+        User user = lookupUser(session).get();
+        users.remove(user);
+        broadcastMessage(userList(GameAction.disconnect));
+        if (game != null && game.hasUser(user)) {
+            game.removeUser(user);
+            checkPlayerWins();
+        }
+    }
+
+    private static void checkPlayerWins() {
+        game.getWinner().ifPresent(winner -> {
+            broadcastMessage(new GameMessage(GameAction.winner, winner.name));
+            game = null;
+            users = new ArrayList<>();
+        });
     }
 
     private static void sendMessage(Session session, GameMessage msg) {
@@ -83,12 +112,11 @@ public class GameService {
     }
 
     private static void cellClick(Session session, GameMessage gameMessage) {
-        if(game.isOver()) {
+        if(game == null) {
             sendMessage(session, new GameMessage(GameAction.gameOver, null));
         } else if(game.markCell(lookupUser(session), (Double) gameMessage.getData())) {
             broadcastMessage(gameMessage);
-            game.getWinner().ifPresent(winner -> broadcastMessage(new GameMessage(GameAction.winner, winner.name)));
-            game = null;
+            checkPlayerWins();
         } else {
             sendMessage(session, new GameMessage(GameAction.wrongColor, null));
         }
@@ -102,32 +130,11 @@ public class GameService {
         return users.stream().filter(u -> u.session.equals(session)).findFirst();
     }
 
-    public static void userLogIn(Session session, Object name) {
-        User user = new User(session, 1 + users.size(), (String) name);
-        users.add(user);
-        broadcastMessage(userList(GameAction.logIn));
-    }
-
-    public static void userDisconnect(Session session) {
-        User user = lookupUser(session).get();
-        users.remove(user);
-        broadcastMessage(userList(GameAction.disconnect));
-        if(game != null && game.hasUser(user)) {
-            game.removeUser(user);
-            game.getWinner().ifPresent(winner -> sendMessage(winner, new GameMessage(GameAction.winner, winner.name)));
-            game = null;
-        }
-    }
-
     private static GameMessage userList(GameAction action) {
         return new GameMessage(action, userNames());
     }
 
     private static List<String> userNames() {
         return users.stream().map(u -> u.name).collect(Collectors.toList());
-    }
-
-    public static void userConnect(Session session) {
-        sendMessage(session, userList(GameAction.connect));
     }
 }

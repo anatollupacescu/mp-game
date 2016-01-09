@@ -59,7 +59,7 @@ public class GameService {
     }
 
     private static String gameAsJsonArray(Game game) {
-        List<Integer> jsonArrayList = game.tableAsArray().stream().map(u -> (u == null) ? 0 : u.color).collect(Collectors.toList());
+        List<Integer> jsonArrayList = game.colorsArray();
         return mapper.toJson(jsonArrayList);
     }
 
@@ -88,6 +88,7 @@ public class GameService {
         } else if(game.markCell(lookupUser(session), (Double) gameMessage.getData())) {
             broadcastMessage(gameMessage);
             game.getWinner().ifPresent(winner -> broadcastMessage(new GameMessage(GameAction.winner, winner.name)));
+            game = null;
         } else {
             sendMessage(session, new GameMessage(GameAction.wrongColor, null));
         }
@@ -108,9 +109,14 @@ public class GameService {
     }
 
     public static void userDisconnect(Session session) {
-        Optional<User> userOptional = users.stream().filter(u -> u.session.equals(session)).findFirst();
-        users.remove(userOptional.get());
+        User user = lookupUser(session).get();
+        users.remove(user);
         broadcastMessage(userList(GameAction.disconnect));
+        if(game != null && game.hasUser(user)) {
+            game.removeUser(user);
+            game.getWinner().ifPresent(winner -> sendMessage(winner, new GameMessage(GameAction.winner, winner.name)));
+            game = null;
+        }
     }
 
     private static GameMessage userList(GameAction action) {

@@ -1,66 +1,53 @@
 package com.example.bean;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Game {
 
     final int size = 8;
-    final User[][] table = new User[size][size];
+
+    private final List<Cell> table;
     private final List<User> users;
+
     private boolean isOver = false;
 
-    public List<User> tableAsArray() {
-        List<User> tableArray = new ArrayList<>(size * size);
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++)
-                tableArray.add(table[i][j]);
-        }
-        return tableArray;
-    }
-
     public Game(List<User> users) {
+        this.table = new LinkedList<>();
         this.users = users;
-        int colorCount = users.size();
-        Random rand = new Random();
-        int cellPerColor = (size * size) / (colorCount + 1);
-        users.stream().forEach(u -> {
-            for(int j = 0; j < cellPerColor; j++) {
-                colorCell(rand, u);
-            }
-            u.setInitialCellCount(cellPerColor);
-        });
-    }
 
-    private void colorCell(Random rand, User user) {
-        int horz = rand.nextInt(size);
-        int vert = rand.nextInt(size);
-        if(table[horz][vert] != null) {
-            colorCell(rand, user);
-        } else {
-            table[horz][vert] = user;
+        int cellPerColor = (size * size) / (users.size() + 1);
+
+        users.stream().forEach(user -> {
+            for (int j = 0; j < cellPerColor; j++) {
+                Cell cell = new Cell();
+                cell.setUser(user);
+                table.add(cell);
+            }
+            user.setInitialCellCount(cellPerColor);
+        });
+
+
+        for(int i = table.size(); i < size * size; i++) {
+            table.add(new Cell());
         }
+        Collections.shuffle(table);
     }
 
     public boolean markCell(Optional<User> userOpt, Double data) {
+        Cell cellAtPosition = table.get(data.intValue());
         User user = userOpt.get();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (i * size + j == data && user.equals(table[i][j])) {
-                    table[i][j] = null;
-                    user.decrementCellCount();
-                    return true; //hit
-                }
-            }
+        if(user.equals(cellAtPosition.getUser()) && !cellAtPosition.isChecked()) {
+            cellAtPosition.check();
+            user.decrementCellCount();
+            return true;
         }
         return false;
     }
 
     public Optional<User> getWinner() {
         Optional<User> winnerOpt = users.stream().filter(u -> u.remainingCellCountIs(0)).findFirst();
-        if(winnerOpt.isPresent()) {
+        if (winnerOpt.isPresent() || users.size() == 1) {
             isOver = true;
         }
         return winnerOpt;
@@ -68,5 +55,22 @@ public class Game {
 
     public boolean isOver() {
         return isOver;
+    }
+
+    public List<Integer> colorsArray() {
+        return table.stream().mapToInt(cell -> {
+            if(cell.getUser() == null) {
+                return 0;
+            }
+            return cell.getUser().color;
+        }).boxed().collect(Collectors.toList());
+    }
+
+    public boolean hasUser(User user) {
+        return users.contains(user);
+    }
+
+    public void removeUser(User user) {
+        users.remove(user);
     }
 }

@@ -2,7 +2,7 @@ package com.example.bean;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-public class User {
+public class Player {
 
     public final Session session;
     public final String name;
@@ -11,7 +11,7 @@ public class User {
     public boolean ready;
     private int cellCount;
 
-    public User(Session session, int color, String name) {
+    public Player(Session session, int color, String name) {
         super();
         this.session = session;
         this.color = color;
@@ -39,10 +39,10 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        User user = (User) o;
+        Player player = (Player) o;
 
-        if (!session.equals(user.session)) return false;
-        return name.equals(user.name);
+        if (!session.equals(player.session)) return false;
+        return name.equals(player.name);
 
     }
 

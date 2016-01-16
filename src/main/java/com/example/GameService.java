@@ -3,7 +3,7 @@ package com.example;
 import com.example.bean.Game;
 import com.example.bean.GameAction;
 import com.example.bean.GameMessage;
-import com.example.bean.User;
+import com.example.bean.Player;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,15 +25,15 @@ import static reactor.bus.selector.Selectors.$;
 public class GameService {
 
     private static final EventBus bus = EventBus.create();
-    private static final AtomicInteger userCount = new AtomicInteger(0);
+    private static final AtomicInteger playerCount = new AtomicInteger(0);
     private static final Gson mapper = new GsonBuilder().create();
-    private static final List<User> players = new ArrayList<>();
+    private static final List<Player> players = new ArrayList<>();
 
-    enum UserEventType {addUser, removeUser, setUserReady}
+    enum PlayerEvent {add, remove, setReady}
 
     static {
 
-        bus.on($("sendMessage"), (Event<Tuple2<List<User>, GameMessage>> event) ->
+        bus.on($("sendMessage"), (Event<Tuple2<List<Player>, GameMessage>> event) ->
                 event.getData().getT1().stream().forEach(u -> {
                     String str = mapper.toJson(event.getData().getT2());
                     try {
@@ -46,17 +46,17 @@ public class GameService {
                 })
         );
 
-        bus.receive($("userList"), (Event<Tuple2<UserEventType, User>> ev) -> {
-            User user = ev.getData().getT2();
+        bus.receive($("updatePlayerList"), (Event<Tuple2<PlayerEvent, Player>> ev) -> {
+            Player player = ev.getData().getT2();
             switch (ev.getData().getT1()) {
-                case addUser:
-                    players.add(user);
+                case add:
+                    players.add(player);
                     return players;
-                case removeUser:
-                    players.remove(user);
+                case remove:
+                    players.remove(player);
                     return players;
-                case setUserReady:
-                    user.isReady(true);
+                case setReady:
+                    player.isReady(true);
                     return players;
                 default:
                     break;
@@ -64,32 +64,32 @@ public class GameService {
             throw new IllegalStateException();
         });
 
-        bus.on($("game"), new Consumer<Event<Tuple2<List<User>, GameMessage>>>() {
+        bus.on($("game"), new Consumer<Event<Tuple2<List<Player>, GameMessage>>>() {
 
             private Game game = null;
-            private List<User> userList;
+            private List<Player> playerList;
 
-            @Override public void accept(Event<Tuple2<List<User>, GameMessage>> ev) {
+            @Override public void accept(Event<Tuple2<List<Player>, GameMessage>> ev) {
                 GameMessage gameMsg = ev.getData().getT2();
                 switch (gameMsg.getAction()) {
                     case startGame:
-                        this.userList = ev.getData().getT1();
-                        game = new Game(userList);
+                        this.playerList = ev.getData().getT1();
+                        game = new Game(playerList);
                         List<Integer> colorsArray = game.colorsArray();
                         GameMessage colorsArrayGameMsg = new GameMessage(GameAction.startGame, colorsArray.toString());
-                        bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, colorsArrayGameMsg)));
+                        bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, colorsArrayGameMsg)));
                         break;
                     case cellClick:
                         if(game == null) return;
-                        User userOpt = ev.getData().getT1().iterator().next();
+                        Player player = ev.getData().getT1().iterator().next();
                         Double cellId = gameMsg.getData(Double.class);
-                        if(game.markCell(userOpt, cellId)) {
-                            bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, gameMsg)));
+                        if(game.markCell(player, cellId)) {
+                            bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gameMsg)));
                         }
                         game.getWinner().ifPresent(winner -> {
                             GameMessage gm = new GameMessage(GameAction.winner, winner.name);
                             game = null;
-                            bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, gm)));
+                            bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gm)));
                         });
                         break;
                     default:
@@ -102,10 +102,10 @@ public class GameService {
         GameMessage gameMessage = mapper.fromJson(message, GameMessage.class);
         switch (gameMessage.getAction()) {
             case logIn:
-                userLogIn(session, gameMessage);
+                playerLogIn(session, gameMessage);
                 break;
             case ready:
-                userReady(session, gameMessage);
+                playerReady(session, gameMessage);
                 break;
             case cellClick:
                  cellClick(session, gameMessage);
@@ -116,69 +116,69 @@ public class GameService {
     }
 
     public static void sessionCreated(Session session) {
-        GameMessage gameMessage = userNameList(GameAction.connect, players);
-        List<User> list = ImmutableList.of(new User(session, 0, null));
-        Tuple2<List<User>, GameMessage> tuple = Tuple2.of(list, gameMessage);
+        GameMessage gameMessage = playerNameList(GameAction.connect, players);
+        List<Player> list = ImmutableList.of(new Player(session, 0, null));
+        Tuple2<List<Player>, GameMessage> tuple = Tuple2.of(list, gameMessage);
         bus.notify("sendMessage", Event.wrap(tuple));
     }
 
-    private static GameMessage userNameList(GameAction action, List<User> users) {
-        Object data = users.stream().map(u -> u.name).collect(Collectors.toList());
+    private static GameMessage playerNameList(GameAction action, List<Player> players) {
+        Object data = players.stream().map(u -> u.name).collect(Collectors.toList());
         return new GameMessage(action, data);
     }
 
-    private static void broadcastUserList(List<User> userList) {
-        GameMessage message = userNameList(GameAction.logIn, userList);
-        bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, message)));
+    private static void broadcastUserList(List<Player> players) {
+        GameMessage message = playerNameList(GameAction.logIn, players);
+        bus.notify("sendMessage", Event.wrap(Tuple2.of(players, message)));
     }
 
-    private static void userLogIn(Session session, GameMessage gameMessage) {
-        User player = new User(session, userCount.incrementAndGet(), gameMessage.getData(String.class));
-        bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.addUser, player)), event -> {
-            List<User> userList = (List<User>) event.getData();
-            broadcastUserList(userList);
+    private static void playerLogIn(Session session, GameMessage gameMessage) {
+        Player player = new Player(session, playerCount.incrementAndGet(), gameMessage.getData(String.class));
+        bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.add, player)), event -> {
+            List<Player> playerList = (List<Player>) event.getData();
+            broadcastUserList(playerList);
         });
     }
 
-    public static void userDisconnect(Session session) {
-        Optional<User> player = getUser(session);
-        bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.removeUser, player.get())), response -> {
-            List<User> userList = (List<User>) response.getData();
-            broadcastUserList(userList);
+    public static void playerDisconnect(Session session) {
+        Optional<Player> player = getPlayerBySession(session);
+        bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.remove, player.get())), response -> {
+            List<Player> playerList = (List<Player>) response.getData();
+            broadcastUserList(playerList);
         });
     }
 
-    private static Optional<User> getUser(Session session) {
+    private static Optional<Player> getPlayerBySession(Session session) {
         return players.stream().filter(u -> u.session.equals(session)).findFirst();
     }
 
-    private static void userReady(Session session, GameMessage gameMessage) {
+    private static void playerReady(Session session, GameMessage gameMessage) {
         Boolean isReady = gameMessage.getData(Boolean.class);
         if (Boolean.TRUE.equals(isReady)) {
             /* has grant start */
-            Optional<User> user = getUser(session);
-            bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.setUserReady, user.get())), response -> {
-                final List<User> userList = players.stream().filter(u -> u.ready).collect(Collectors.toList());
+            Optional<Player> player = getPlayerBySession(session);
+            bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
+                final List<Player> playerListList = players.stream().filter(u -> u.ready).collect(Collectors.toList());
                 GameMessage startGameMsg = new GameMessage(GameAction.startGame, null);
-                bus.notify("game", Event.wrap(Tuple2.of(userList, startGameMsg)));
+                bus.notify("game", Event.wrap(Tuple2.of(playerListList, startGameMsg)));
             });
         } else {
-            Optional<User> user = getUser(session);
-            bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.setUserReady, user.get())), response -> {
-                List<User> usersNotReadyYet = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
-                if (usersNotReadyYet.size() == 1) {
-                    User lastUser = usersNotReadyYet.iterator().next();
+            Optional<Player> player = getPlayerBySession(session);
+            bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
+                List<Player> playersNotReadyYet = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
+                if (playersNotReadyYet.size() == 1) {
+                    Player lastUser = playersNotReadyYet.iterator().next();
                     GameMessage grantStartGameMsg = new GameMessage(GameAction.grantStart, null);
                     bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(lastUser), grantStartGameMsg)));
                 }
             });
             GameMessage startGameMsg = new GameMessage(GameAction.ready, null);
-            bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(user.get()), startGameMsg)));
+            bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(player.get()), startGameMsg)));
         }
     }
 
     private static void cellClick(Session session, GameMessage gameMessage) {
-        Optional<User> userClickedCell = getUser(session);
-        bus.notify("game", Event.wrap(Tuple2.of(ImmutableList.of(userClickedCell.get()), gameMessage)));
+        Optional<Player> player = getPlayerBySession(session);
+        bus.notify("game", Event.wrap(Tuple2.of(ImmutableList.of(player.get()), gameMessage)));
     }
 }

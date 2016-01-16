@@ -21,7 +21,7 @@ public class MpGameServiceWebSocket {
 
     @OnWebSocketClose
     public void handleClose(int statusCode, String reason) {
-        GameService.userDisconnect(session);
+        GameService.playerDisconnect(session);
     }
 
     @OnWebSocketError

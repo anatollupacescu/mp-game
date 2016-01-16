@@ -8,21 +8,21 @@ public class Game {
     final int size = 8;
 
     private final List<Cell> table;
-    private final List<User> users;
+    private final List<Player> playerList;
 
-    public Game(List<User> users) {
+    public Game(List<Player> players) {
         this.table = new LinkedList<>();
-        this.users = users;
+        this.playerList = players;
 
-        int cellPerColor = (size * size) / (users.size() + 1);
+        int cellPerColor = (size * size) / (players.size() + 1);
 
-        users.stream().forEach(user -> {
+        players.stream().forEach(player -> {
             for (int j = 0; j < cellPerColor; j++) {
                 Cell cell = new Cell();
-                cell.setUser(user);
+                cell.setPlayer(player);
                 table.add(cell);
             }
-            user.setInitialCellCount(cellPerColor);
+            player.setInitialCellCount(cellPerColor);
         });
 
 
@@ -32,26 +32,26 @@ public class Game {
         Collections.shuffle(table);
     }
 
-    public boolean markCell(User user, Double data) {
+    public boolean markCell(Player player, Double data) {
         Cell cellAtPosition = table.get(data.intValue());
-        if(user.equals(cellAtPosition.getUser()) && !cellAtPosition.isChecked()) {
+        if(player.equals(cellAtPosition.getPlayer()) && !cellAtPosition.isChecked()) {
             cellAtPosition.check();
-            user.decrementCellCount();
+            player.decrementCellCount();
             return true;
         }
         return false;
     }
 
-    public Optional<User> getWinner() {
-        return users.stream().filter(u -> u.remainingCellCountIs(0)).findFirst();
+    public Optional<Player> getWinner() {
+        return playerList.stream().filter(player -> player.remainingCellCountIs(0)).findFirst();
     }
 
     public List<Integer> colorsArray() {
         return table.stream().mapToInt(cell -> {
-            if(cell.getUser() == null) {
+            if(cell.getPlayer() == null) {
                 return 0;
             }
-            return cell.getUser().color;
+            return cell.getPlayer().color;
         }).boxed().collect(Collectors.toList());
     }
 }

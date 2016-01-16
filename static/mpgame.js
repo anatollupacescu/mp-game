@@ -1,4 +1,4 @@
-var ws = new WebSocket("ws://127.0.0.1:8090/stocks");
+var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
 
 var hasGrantStart = false;
 var colors = [null, "red", "green", "blue", "orange"]
@@ -36,8 +36,6 @@ ws.onmessage = function (evt) {
                 document.getElementById(i).style.backgroundColor = colors[colorIndex];
             }
         }
-    } else if (obj.action == "wrongColor") {
-        alert("Click your color only")
     } else if (obj.action == "winner") {
         alert("We have a winner: " + obj.data)
     } else if (obj.action == "gameOver") {
@@ -72,8 +70,7 @@ function refreshUserList(userList) {
     for (var i = users.options.length - 1; i > 1; i--) {
         users.remove(i);
     }
-    var myStringArray = new Array()
-    myStringArray = ("" + userList).split(",")
+    var myStringArray = ("" + userList).split(",")
     var arrayLength = myStringArray.length
     for (var i = 0; i < arrayLength; i++) {
         var option = new Option(myStringArray[i], myStringArray[i])
@@ -84,12 +81,12 @@ function refreshUserList(userList) {
 
 // called when socket connection established
 ws.onopen = function () {
-    console.log("Connected to stock service! Press 'Start' to get stock info.")
+    console.log("Connected to game service! Press 'Start' to get stock info.")
 };
 
 // called when socket connection closed
 ws.onclose = function () {
-    console.log("Disconnected from stock service!")
+    console.log("Disconnected from game service!")
 };
 
 // called in case of an error

@@ -4,7 +4,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 
 @WebSocket
-public class StockServiceWebSocket {
+public class MpGameServiceWebSocket {
 
     private Session session;
 
@@ -16,7 +16,7 @@ public class StockServiceWebSocket {
     @OnWebSocketConnect
     public void handleConnect(Session session) {
         this.session = session;
-        GameService.userConnect(session);
+        GameService.sessionCreated(session);
     }
 
     @OnWebSocketClose

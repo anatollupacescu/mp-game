@@ -32,9 +32,8 @@ public class Game {
         Collections.shuffle(table);
     }
 
-    public boolean markCell(Optional<User> userOpt, Double data) {
+    public boolean markCell(User user, Double data) {
         Cell cellAtPosition = table.get(data.intValue());
-        User user = userOpt.get();
         if(user.equals(cellAtPosition.getUser()) && !cellAtPosition.isChecked()) {
             cellAtPosition.check();
             user.decrementCellCount();
@@ -54,13 +53,5 @@ public class Game {
             }
             return cell.getUser().color;
         }).boxed().collect(Collectors.toList());
-    }
-
-    public boolean hasUser(User user) {
-        return users.contains(user);
-    }
-
-    public void removeUser(User user) {
-        users.remove(user);
     }
 }

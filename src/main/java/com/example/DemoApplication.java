@@ -34,14 +34,14 @@ public class DemoApplication {
 
             ServletContextHandler ctx = new ServletContextHandler();
             ctx.setContextPath("/");
-            ctx.addServlet(StockServiceSocketServlet.class, "/stocks");
+			ctx.addServlet(MpGameServiceSocketServlet.class, "/mpgame");
 
             server.setHandler(ctx);
 
             return server;
         }
 
-        public static class StockServiceSocketServlet extends WebSocketServlet {
+        public static class MpGameServiceSocketServlet extends WebSocketServlet {
 
             /**
              *
@@ -50,7 +50,7 @@ public class DemoApplication {
 
             @Override
             public void configure(WebSocketServletFactory factory) {
-                factory.register(StockServiceWebSocket.class);
+                factory.register(MpGameServiceWebSocket.class);
             }
         }
     }

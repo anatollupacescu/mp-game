@@ -1,18 +1,22 @@
 package com.example;
 
+import com.example.bean.Game;
 import com.example.bean.GameAction;
 import com.example.bean.GameMessage;
 import com.example.bean.User;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.eclipse.jetty.websocket.api.Session;
 import reactor.bus.Event;
 import reactor.bus.EventBus;
 import reactor.fn.Consumer;
+import reactor.fn.tuple.Tuple2;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -25,183 +29,156 @@ public class GameService {
     private static final Gson mapper = new GsonBuilder().create();
     private static final List<User> players = new ArrayList<>();
 
+    enum UserEventType {addUser, removeUser, setUserReady}
+
     static {
-        bus.receive($("userList"), (Event<GameMessage> ev) -> {
-                GameMessage message = ev.getData();
-                Object response = null;
-                switch (message.getAction()) {
-                    case connect:
-                        response = players;
-                        break;
-                    case logIn:
-                        User userToAdd = (User) message.getData();
-                        players.add(userToAdd);
-                        response = players;
-                        break;
-                    case disconnect:
-                        User userToRemove = (User) message.getData();
-                        players.remove(userToRemove);
-                        response = players;
-                        break;
-                    case ready:
-                        Session session = message.getData(Session.class);
-                        players.stream().filter(u->u.session.equals(session)).findFirst().ifPresent(u -> u.isReady(true));
-                        response = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
-                    default:
-                        break;
-                }
-                return response;
+
+        bus.on($("sendMessage"), (Event<Tuple2<List<User>, GameMessage>> event) ->
+                event.getData().getT1().stream().forEach(u -> {
+                    String str = mapper.toJson(event.getData().getT2());
+                    try {
+                        if (u.session.isOpen()) {
+                            u.session.getRemote().sendString(str);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException();
+                    }
+                })
+        );
+
+        bus.receive($("userList"), (Event<Tuple2<UserEventType, User>> ev) -> {
+            User user = ev.getData().getT2();
+            switch (ev.getData().getT1()) {
+                case addUser:
+                    players.add(user);
+                    return players;
+                case removeUser:
+                    players.remove(user);
+                    return players;
+                case setUserReady:
+                    user.isReady(true);
+                    return players;
+                default:
+                    break;
+            }
+            throw new IllegalStateException();
         });
+
+        bus.on($("game"), new Consumer<Event<Tuple2<List<User>, GameMessage>>>() {
+
+            private Game game = null;
+            private List<User> userList;
+
+            @Override public void accept(Event<Tuple2<List<User>, GameMessage>> ev) {
+                GameMessage gameMsg = ev.getData().getT2();
+                switch (gameMsg.getAction()) {
+                    case startGame:
+                        this.userList = ev.getData().getT1();
+                        game = new Game(userList);
+                        List<Integer> colorsArray = game.colorsArray();
+                        GameMessage colorsArrayGameMsg = new GameMessage(GameAction.startGame, colorsArray.toString());
+                        bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, colorsArrayGameMsg)));
+                        break;
+                    case cellClick:
+                        if(game == null) return;
+                        User userOpt = ev.getData().getT1().iterator().next();
+                        Double cellId = gameMsg.getData(Double.class);
+                        if(game.markCell(userOpt, cellId)) {
+                            bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, gameMsg)));
+                        }
+                        game.getWinner().ifPresent(winner -> {
+                            GameMessage gm = new GameMessage(GameAction.winner, winner.name);
+                            game = null;
+                            bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, gm)));
+                        });
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown action");
+                }
+            }});
     }
 
     public static void handleClientMessage(String message, Session session) {
         GameMessage gameMessage = mapper.fromJson(message, GameMessage.class);
         switch (gameMessage.getAction()) {
-            case connect:
-                userConnect(gameMessage);
-                break;
             case logIn:
                 userLogIn(session, gameMessage);
                 break;
             case ready:
                 userReady(session, gameMessage);
                 break;
-            case startGame:
-                startGame(session, gameMessage);
-                break;
             case cellClick:
-//                cellClick(session, gameMessage);
+                 cellClick(session, gameMessage);
                 break;
             default:
                 throw new IllegalArgumentException();
         }
     }
 
-    private static GameMessage busUserList(GameAction action, List<User> users) {
+    public static void sessionCreated(Session session) {
+        GameMessage gameMessage = userNameList(GameAction.connect, players);
+        List<User> list = ImmutableList.of(new User(session, 0, null));
+        Tuple2<List<User>, GameMessage> tuple = Tuple2.of(list, gameMessage);
+        bus.notify("sendMessage", Event.wrap(tuple));
+    }
+
+    private static GameMessage userNameList(GameAction action, List<User> users) {
         Object data = users.stream().map(u -> u.name).collect(Collectors.toList());
         return new GameMessage(action, data);
     }
 
     private static void broadcastUserList(List<User> userList) {
-        GameMessage message = busUserList(GameAction.logIn, userList);
-        userList.stream().forEach(u -> sendMessage(u.session, message));
+        GameMessage message = userNameList(GameAction.logIn, userList);
+        bus.notify("sendMessage", Event.wrap(Tuple2.of(userList, message)));
     }
 
     private static void userLogIn(Session session, GameMessage gameMessage) {
-        User user = new User(session, userCount.incrementAndGet(), gameMessage.getData(String.class));
-        GameMessage userGameMessage = new GameMessage(gameMessage.getAction(), user);
-        bus.sendAndReceive("userList", Event.wrap(userGameMessage), response -> {
-            List<User> userList = (List<User>) response.getData();
+        User player = new User(session, userCount.incrementAndGet(), gameMessage.getData(String.class));
+        bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.addUser, player)), event -> {
+            List<User> userList = (List<User>) event.getData();
             broadcastUserList(userList);
-        });
-    }
-
-    private static void userConnect(GameMessage gameMessage) {
-        bus.sendAndReceive("userList", Event.wrap(gameMessage), response -> {
-            List<User> userList = (List<User>) response.getData();
-            broadcastUserList(userList);
-        });
-    }
-
-    public static void userConnect(Session session) {
-        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
-            GameMessage message = busUserList(GameAction.connect, (List<User>) response.getData());
-            sendMessage(session, message);
         });
     }
 
     public static void userDisconnect(Session session) {
-        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
+        Optional<User> player = getUser(session);
+        bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.removeUser, player.get())), response -> {
             List<User> userList = (List<User>) response.getData();
-            userList.stream().filter(u -> u.session.equals(session)).findFirst().ifPresent(user -> {
-                GameMessage gm = new GameMessage(GameAction.disconnect, user);
-                bus.sendAndReceive("userList", Event.wrap(gm), rsp -> {
-                    broadcastUserList((List<User>) rsp.getData());
-                });
-            });
+            broadcastUserList(userList);
         });
     }
 
-    private static void userReady(Session session, Object data) {
-        Boolean isReady = ((GameMessage)data).getData(Boolean.class);
+    private static Optional<User> getUser(Session session) {
+        return players.stream().filter(u -> u.session.equals(session)).findFirst();
+    }
+
+    private static void userReady(Session session, GameMessage gameMessage) {
+        Boolean isReady = gameMessage.getData(Boolean.class);
         if (Boolean.TRUE.equals(isReady)) {
-            bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
-                List<User> userList = (List<User>) response.getData();
-                bus.on($("game"), new GameConsumer(bus, userList));
-                sendMessage(session, new GameMessage(GameAction.ready, null));
+            /* has grant start */
+            Optional<User> user = getUser(session);
+            bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.setUserReady, user.get())), response -> {
+                final List<User> userList = players.stream().filter(u -> u.ready).collect(Collectors.toList());
+                GameMessage startGameMsg = new GameMessage(GameAction.startGame, null);
+                bus.notify("game", Event.wrap(Tuple2.of(userList, startGameMsg)));
             });
         } else {
-            sendMessage(session, new GameMessage(GameAction.ready, null));
-            bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.ready, session)), usersNotReady -> {
-                List<User> usersNotReadyYet = (List<User>) usersNotReady.getData();
+            Optional<User> user = getUser(session);
+            bus.sendAndReceive("userList", Event.wrap(Tuple2.of(UserEventType.setUserReady, user.get())), response -> {
+                List<User> usersNotReadyYet = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
                 if (usersNotReadyYet.size() == 1) {
-                    sendMessage(usersNotReadyYet.iterator().next().session, new GameMessage(GameAction.grantStart, null));
+                    User lastUser = usersNotReadyYet.iterator().next();
+                    GameMessage grantStartGameMsg = new GameMessage(GameAction.grantStart, null);
+                    bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(lastUser), grantStartGameMsg)));
                 }
             });
+            GameMessage startGameMsg = new GameMessage(GameAction.ready, null);
+            bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(user.get()), startGameMsg)));
         }
-    }
-
-    private static void startGame(Session session, GameMessage gameMessage) {
-        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
-            List<User> usersReady = ((List<User>) response.getData()).stream().filter(u -> u.ready).collect(Collectors.toList());
-            bus.receive($("game"), (Event<GameMessage> ev) -> {
-                final GameMessage data = ev.getData();
-                switch(data.getAction()) {
-                    case cellClick:
-                        break;
-
-                }
-                return null;
-            });
-
-        sendMessage(lookupUser(session).get(), gameMessage);
-    }
-
-    private static void sendMessage(Session session, GameMessage gameMessage) {
-        String str = mapper.toJson(gameMessage);
-        try {
-            if (session.isOpen()) {
-                session.getRemote().sendString(str);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
-    }
-    /*
-    private static void checkPlayerWins() {
-        game.getWinner().ifPresent(winner -> {
-            broadcastMessage(new GameMessage(GameAction.winner, winner.name));
-            game = null;
-            users = new ArrayList<>();
-        });
-    }
-
-    public static void broadcastMessage(GameMessage gameMessage) {
-        bus.notify($("broadcast"), Event.wrap(gameMessage));
     }
 
     private static void cellClick(Session session, GameMessage gameMessage) {
-        if (game == null) {
-            sendMessage(session, new GameMessage(GameAction.gameOver, null));
-        } else if (game.markCell(lookupUser(session), (Double) gameMessage.getData())) {
-            broadcastMessage(gameMessage);
-            checkPlayerWins();
-        } else {
-            sendMessage(session, new GameMessage(GameAction.wrongColor, null));
-        }
+        Optional<User> userClickedCell = getUser(session);
+        bus.notify("game", Event.wrap(Tuple2.of(ImmutableList.of(userClickedCell.get()), gameMessage)));
     }
-
-
-    private static Optional<User> lookupUser(Session session) {
-        return users.stream().filter(u -> u.session.equals(session)).findFirst();
-    }
-
-    private static GameMessage userList(GameAction action) {
-        return new GameMessage(action, userNames());
-    }
-
-    private static List<String> userNames() {
-        return users.stream().map(u -> u.name).collect(Collectors.toList());
-    }
-    */
 }

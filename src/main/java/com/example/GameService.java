@@ -9,7 +9,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import reactor.bus.Event;
 import reactor.bus.EventBus;
 import reactor.fn.Consumer;
-import reactor.fn.tuple.Tuple2;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,25 +23,34 @@ public class GameService {
     private static final EventBus bus = EventBus.create();
     private static final AtomicInteger userCount = new AtomicInteger(0);
     private static final Gson mapper = new GsonBuilder().create();
+    private static final List<User> players = new ArrayList<>();
 
     static {
-        bus.on($("userList"), new Consumer<Event<GameMessage>>() {
-            private final List<User> players = new ArrayList<>();
-            public void accept(Event<GameMessage> userEvent) {
-                GameMessage message = userEvent.getData();
-                User user = (User)message.getData();
+        bus.receive($("userList"), (Event<GameMessage> ev) -> {
+                GameMessage message = ev.getData();
+                Object response = null;
                 switch (message.getAction()) {
+                    case connect:
+                        response = players;
+                        break;
                     case logIn:
-                        players.add(user);
+                        User userToAdd = (User) message.getData();
+                        players.add(userToAdd);
+                        response = players;
                         break;
                     case disconnect:
-                        players.remove(user);
+                        User userToRemove = (User) message.getData();
+                        players.remove(userToRemove);
+                        response = players;
                         break;
+                    case ready:
+                        Session session = message.getData(Session.class);
+                        players.stream().filter(u->u.session.equals(session)).findFirst().ifPresent(u -> u.isReady(true));
+                        response = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
                     default:
                         break;
                 }
-                bus.notify(userEvent.getReplyTo(), Event.wrap(players));
-            }
+                return response;
         });
     }
 
@@ -56,10 +64,10 @@ public class GameService {
                 userLogIn(session, gameMessage);
                 break;
             case ready:
-//                userReady(session, gameMessage);
+                userReady(session, gameMessage);
                 break;
             case startGame:
-//                startGame(session, gameMessage);
+                startGame(session, gameMessage);
                 break;
             case cellClick:
 //                cellClick(session, gameMessage);
@@ -74,7 +82,7 @@ public class GameService {
         return new GameMessage(action, data);
     }
 
-    private static void broadcastMessage(List<User> userList) {
+    private static void broadcastUserList(List<User> userList) {
         GameMessage message = busUserList(GameAction.logIn, userList);
         userList.stream().forEach(u -> sendMessage(u.session, message));
     }
@@ -83,35 +91,70 @@ public class GameService {
         User user = new User(session, userCount.incrementAndGet(), gameMessage.getData(String.class));
         GameMessage userGameMessage = new GameMessage(gameMessage.getAction(), user);
         bus.sendAndReceive("userList", Event.wrap(userGameMessage), response -> {
-           List<User> userList = (List<User>) response.getData();
-           broadcastMessage(userList);
+            List<User> userList = (List<User>) response.getData();
+            broadcastUserList(userList);
         });
     }
 
     private static void userConnect(GameMessage gameMessage) {
         bus.sendAndReceive("userList", Event.wrap(gameMessage), response -> {
             List<User> userList = (List<User>) response.getData();
-            broadcastMessage(userList);
+            broadcastUserList(userList);
         });
     }
 
     public static void userConnect(Session session) {
         bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
-            GameMessage message = busUserList(GameAction.connect, (List<User>)response.getData());
+            GameMessage message = busUserList(GameAction.connect, (List<User>) response.getData());
             sendMessage(session, message);
         });
     }
 
     public static void userDisconnect(Session session) {
-        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.doNothing, null)), response -> {
+        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
             List<User> userList = (List<User>) response.getData();
             userList.stream().filter(u -> u.session.equals(session)).findFirst().ifPresent(user -> {
                 GameMessage gm = new GameMessage(GameAction.disconnect, user);
                 bus.sendAndReceive("userList", Event.wrap(gm), rsp -> {
-                    broadcastMessage((List<User>) rsp.getData());
+                    broadcastUserList((List<User>) rsp.getData());
                 });
             });
         });
+    }
+
+    private static void userReady(Session session, Object data) {
+        Boolean isReady = ((GameMessage)data).getData(Boolean.class);
+        if (Boolean.TRUE.equals(isReady)) {
+            bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
+                List<User> userList = (List<User>) response.getData();
+                bus.on($("game"), new GameConsumer(bus, userList));
+                sendMessage(session, new GameMessage(GameAction.ready, null));
+            });
+        } else {
+            sendMessage(session, new GameMessage(GameAction.ready, null));
+            bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.ready, session)), usersNotReady -> {
+                List<User> usersNotReadyYet = (List<User>) usersNotReady.getData();
+                if (usersNotReadyYet.size() == 1) {
+                    sendMessage(usersNotReadyYet.iterator().next().session, new GameMessage(GameAction.grantStart, null));
+                }
+            });
+        }
+    }
+
+    private static void startGame(Session session, GameMessage gameMessage) {
+        bus.sendAndReceive("userList", Event.wrap(new GameMessage(GameAction.connect, null)), response -> {
+            List<User> usersReady = ((List<User>) response.getData()).stream().filter(u -> u.ready).collect(Collectors.toList());
+            bus.receive($("game"), (Event<GameMessage> ev) -> {
+                final GameMessage data = ev.getData();
+                switch(data.getAction()) {
+                    case cellClick:
+                        break;
+
+                }
+                return null;
+            });
+
+        sendMessage(lookupUser(session).get(), gameMessage);
     }
 
     private static void sendMessage(Session session, GameMessage gameMessage) {
@@ -124,23 +167,7 @@ public class GameService {
             throw new RuntimeException();
         }
     }
-
     /*
-    private static void userReady(Session session, Object data) {
-        if (Boolean.TRUE.equals(data)) {
-            game = new Game(users);
-            List<Integer> jsonArrayList = game.colorsArray();
-            broadcastMessage(new GameMessage(GameAction.startGame, mapper.toJson(jsonArrayList)));
-        } else {
-            sendMessage(session, new GameMessage(GameAction.ready, null));
-            lookupUser(session).get().isReady(true);
-            List<User> userNotReadyYet = users.stream().filter(u -> !u.ready).collect(Collectors.toList());
-            if (userNotReadyYet.size() == 1L) {
-                sendMessage(userNotReadyYet.iterator().next(), new GameMessage(GameAction.grantStart, null));
-            }
-        }
-    }
-
     private static void checkPlayerWins() {
         game.getWinner().ifPresent(winner -> {
             broadcastMessage(new GameMessage(GameAction.winner, winner.name));
@@ -164,12 +191,6 @@ public class GameService {
         }
     }
 
-    private static void startGame(Session session, GameMessage gameMessage) {
-
-        bus.on($("game"), new GameConsumer(users));
-
-        sendMessage(lookupUser(session).get(), gameMessage);
-    }
 
     private static Optional<User> lookupUser(Session session) {
         return users.stream().filter(u -> u.session.equals(session)).findFirst();

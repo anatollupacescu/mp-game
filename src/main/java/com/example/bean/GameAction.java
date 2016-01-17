@@ -2,5 +2,5 @@ package com.example.bean;
 
 public enum GameAction {
 
-    cellClick, connect, disconnect, logIn, grantStart, winner, startGame, ready
+    cellClick, connect, logIn, grantStart, winner, startGame, ready
 }

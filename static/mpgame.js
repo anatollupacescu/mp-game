@@ -1,41 +1,57 @@
 var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
-
 var hasGrantStart = false;
+
+$(document).ready(function () {
+    $("#sign-in").click(function () {
+        var playerName = $("#playerName").val().trim()
+        if(!playerName) {
+            alert("Please enter a valid name")
+            $("#playerName").val("")
+            $("#playerName").focus()
+        } else {
+            ws.send(JSON.stringify({
+                action: 'logIn',
+                data: playerName
+            }));
+        }
+    });
+
+    $("#start-game").click(function() {
+        ws.send(JSON.stringify({
+            action: 'ready',
+            data: hasGrantStart
+        }));
+    });
+});
+
 var colors = [null, "red", "green", "blue", "orange"]
 var gameInProgress = false;
 
 ws.onmessage = function (evt) {
     var obj = JSON.parse(evt.data)
-    console.log(obj.action + " >> " + obj.data)
-    if (obj.action == "cellClick") {
-        var cellId = obj.data
-        var cell = document.getElementById(cellId)
-        cell.style.backgroundColor = "grey"
-    } else if (obj.action == "connect" || obj.action == "disconnect") {
+    if (obj.action == "connect" || obj.action == "disconnect") {
         refreshUserList(obj.data);
     } else if (obj.action == "logIn") {
         refreshUserList(obj.data);
-        if (!gameInProgress) {
-            document.getElementById("login").style.display = "none"
-            document.getElementById("ready").style.display = "block"
-        }
-    } else if (obj.action == "pleaseWait") {
-        alert("Please wait - game in progress")
+        $(".navbar").hide()
+        $("#start-game").removeClass("disabled")
     } else if (obj.action == "ready") {
-        document.getElementById("ready").style.display = "none"
+        $("#ready-btn").hide()
     } else if (obj.action == "grantStart") {
-        document.getElementById("ready").value = "Start game"
+        $("#start-game").text("Start game")
         hasGrantStart = true;
     } else if (obj.action == "startGame") {
-        document.getElementById("ready").style.display = "none"
+        $("#start-game").hide()
         gameInProgress = true;
         var arr = JSON.parse(obj.data)
         for (var i = 0; i < arr.length; i++) {
             var colorIndex = arr[i]
             if (colorIndex > 0) {
-                document.getElementById(i).style.backgroundColor = colors[colorIndex];
+                $("#cell_" + i).css("background-color", colors[colorIndex]);
             }
         }
+    } else if (obj.action == "cellClick") {
+        $("#cell_" + obj.data).css("background-color", "grey");
     } else if (obj.action == "winner") {
         alert("We have a winner: " + obj.data)
     } else if (obj.action == "gameOver") {
@@ -43,25 +59,10 @@ ws.onmessage = function (evt) {
     }
 };
 
-function ready() {
-    sendToServer(JSON.stringify({
-        action: 'ready',
-        data: hasGrantStart
-    }));
-}
-
 function cellClicked(cellId) {
     sendToServer(JSON.stringify({
         action: 'cellClick',
         data: cellId
-    }));
-}
-
-function connect() {
-    var name = document.getElementById('name').value
-    sendToServer(JSON.stringify({
-        action: 'logIn',
-        data: name
     }));
 }
 

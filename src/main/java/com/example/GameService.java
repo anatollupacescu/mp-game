@@ -34,16 +34,16 @@ public class GameService {
     static {
 
         bus.on($("sendMessage"), (Event<Tuple2<List<Player>, GameMessage>> event) ->
-                event.getData().getT1().stream().forEach(u -> {
-                    String str = mapper.toJson(event.getData().getT2());
-                    try {
-                        if (u.session.isOpen()) {
-                            u.session.getRemote().sendString(str);
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException();
+            event.getData().getT1().stream().forEach(u -> {
+                String str = mapper.toJson(event.getData().getT2());
+                try {
+                    if (u.session.isOpen()) {
+                        u.session.getRemote().sendString(str);
                     }
-                })
+                } catch (IOException e) {
+                    throw new RuntimeException();
+                }
+            })
         );
 
         bus.receive($("updatePlayerList"), (Event<Tuple2<PlayerEvent, Player>> ev) -> {

@@ -1,6 +1,9 @@
 var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
 var hasGrantStart = false;
 
+var colors = [null, "orange", "indianred", "olivedrab", "mediumseagreen", "mediumorchid", "limegreen", "lightslategray"]
+var gameInProgress = false;
+
 $(document).ready(function () {
     $("#sign-in").click(function () {
         var playerName = $("#playerName").val().trim()
@@ -23,9 +26,6 @@ $(document).ready(function () {
         }));
     });
 });
-
-var colors = [null, "red", "green", "blue", "orange"]
-var gameInProgress = false;
 
 ws.onmessage = function (evt) {
     var obj = JSON.parse(evt.data)
@@ -67,22 +67,17 @@ function cellClicked(cellId) {
 }
 
 function refreshUserList(userList) {
-    var users = document.getElementById("users")
-    for (var i = users.options.length - 1; i > 1; i--) {
-        users.remove(i);
-    }
-    var myStringArray = ("" + userList).split(",")
-    var arrayLength = myStringArray.length
-    for (var i = 0; i < arrayLength; i++) {
-        var option = new Option(myStringArray[i], myStringArray[i])
-        option.style.color = colors[i + 1]
-        users.options[users.options.length] = option
+    if (userList.length > 0) {
+        $('#player-list').empty();
+        for (var i = 0; i < userList.length; i++) {
+            $("#player-list").append("<li class='list-group-item' style='background-color: " + colors[userList[i].color] + "'>" + userList[i].name + "</li>");
+        }
     }
 }
 
 // called when socket connection established
 ws.onopen = function () {
-    console.log("Connected to game service! Press 'Start' to get stock info.")
+    console.log("Connected to game service!")
 };
 
 // called when socket connection closed

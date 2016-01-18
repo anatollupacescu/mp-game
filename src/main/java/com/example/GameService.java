@@ -116,19 +116,14 @@ public class GameService {
     }
 
     public static void sessionCreated(Session session) {
-        GameMessage gameMessage = playerNameList(GameAction.connect, players);
+        GameMessage gameMessage = new GameMessage(GameAction.connect, players.toArray());
         List<Player> list = ImmutableList.of(new Player(session, 0, null));
         Tuple2<List<Player>, GameMessage> tuple = Tuple2.of(list, gameMessage);
         bus.notify("sendMessage", Event.wrap(tuple));
     }
 
-    private static GameMessage playerNameList(GameAction action, List<Player> players) {
-        Object data = players.stream().map(u -> u.name).collect(Collectors.toList());
-        return new GameMessage(action, data);
-    }
-
     private static void broadcastUserList(List<Player> players) {
-        GameMessage message = playerNameList(GameAction.logIn, players);
+        GameMessage message = new GameMessage(GameAction.logIn, players.toArray());
         bus.notify("sendMessage", Event.wrap(Tuple2.of(players, message)));
     }
 

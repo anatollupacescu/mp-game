@@ -29,7 +29,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">Sign in to start playing</a>
+            <a class="navbar-brand">Sign in to start playing</a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <form class="navbar-form navbar-right">
@@ -47,18 +47,18 @@
     <div class="container">
         <h2>Multi-player sample game</h2>
         <p>For presentation purpose only</p>
-        <p id="ready-btn"><a class="btn btn-primary btn-lg disabled" href="#" role="button" id="start-game">Ready &raquo;</a></p>
+        <p id="ready-btn"><a class="btn btn-primary btn-lg disabled" role="button" id="start-game">Ready &raquo;</a></p>
     </div>
 </div>
 
 <div class="container">
     <!-- Example row of columns -->
     <div class="row">
-        <div class="col-md-6">
-            <select multiple size=14 id=users style="font-size: 20px">
-                <option value="">Players Board</option>
-                <option value="">---------------------</option>
-            </select>
+        <div class="col-md-4" style="font-size: 20px;">
+            <p>Players board</p>
+            <ul class="list-group" id="player-list" >
+                <li class="list-group-item">No players yet</li>
+            </ul>
         </div>
         <div class="col-md-6">
             <table class="table table-bordered" style="height:500px; width: 500px;">
@@ -76,16 +76,10 @@
             </table>
         </div>
     </div>
-
     <hr>
-
     <footer>
         <p>&copy; 2016 Gamesys</p>
     </footer>
 </div> <!-- /container -->
-
-<!-- Bootstrap core JavaScript
-================================================== -->
-<!-- Placed at the end of the document so the pages load faster -->
 </body>
 </html>

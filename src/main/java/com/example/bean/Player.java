@@ -4,7 +4,7 @@ import org.eclipse.jetty.websocket.api.Session;
 
 public class Player {
 
-    public final Session session;
+    public final transient Session session;
     public final String name;
     public final int color;
 

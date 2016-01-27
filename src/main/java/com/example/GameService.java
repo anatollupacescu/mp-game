@@ -5,6 +5,7 @@ import com.example.bean.GameAction;
 import com.example.bean.GameMessage;
 import com.example.bean.Player;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.eclipse.jetty.websocket.api.Session;
@@ -17,17 +18,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Queue;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static reactor.bus.selector.Selectors.$;
 
 public class GameService {
 
     private static final EventBus bus = EventBus.create();
-    private static final AtomicInteger playerCount = new AtomicInteger(0);
     private static final Gson mapper = new GsonBuilder().create();
     private static final List<Player> players = new ArrayList<>();
+    private static final Queue<Integer> colors = Lists.newLinkedList(IntStream.rangeClosed(1, 7).boxed().collect(Collectors.toList()));
 
     enum PlayerEvent {add, remove, setReady}
 
@@ -50,10 +52,12 @@ public class GameService {
             Player player = ev.getData().getT2();
             switch (ev.getData().getT1()) {
                 case add:
+                    player.setColor(colors.poll());
                     players.add(player);
                     return players;
                 case remove:
                     players.remove(player);
+                    colors.add(player.color);
                     return players;
                 case setReady:
                     player.isReady(true);
@@ -117,7 +121,7 @@ public class GameService {
 
     public static void sessionCreated(Session session) {
         GameMessage gameMessage = new GameMessage(GameAction.connect, players.toArray());
-        List<Player> list = ImmutableList.of(new Player(session, 0, null));
+        List<Player> list = ImmutableList.of(new Player(session));
         Tuple2<List<Player>, GameMessage> tuple = Tuple2.of(list, gameMessage);
         bus.notify("sendMessage", Event.wrap(tuple));
     }
@@ -128,7 +132,7 @@ public class GameService {
     }
 
     private static void playerLogIn(Session session, GameMessage gameMessage) {
-        Player player = new Player(session, playerCount.incrementAndGet(), gameMessage.getData(String.class));
+        Player player = new Player(session, gameMessage.getData(String.class));
         bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.add, player)), event -> {
             List<Player> playerList = (List<Player>) event.getData();
             broadcastUserList(playerList);

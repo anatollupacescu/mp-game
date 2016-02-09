@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.eclipse.jetty.websocket.api.Session;
 import reactor.bus.Event;
 import reactor.bus.EventBus;
 import reactor.fn.Consumer;
@@ -21,6 +20,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.eclipse.jetty.websocket.api.Session;
 
 import static reactor.bus.selector.Selectors.$;
 
@@ -39,8 +40,8 @@ public class GameService {
             event.getData().getT1().stream().forEach(u -> {
                 String str = mapper.toJson(event.getData().getT2());
                 try {
-                    if (u.session.isOpen()) {
-                        u.session.getRemote().sendString(str);
+                    if (u.getSession().isOpen()) {
+                        u.getSession().getRemote().sendString(str);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException();
@@ -57,10 +58,10 @@ public class GameService {
                     return players;
                 case remove:
                     players.remove(player);
-                    colors.add(player.color);
+                    colors.add(player.getColor());
                     return players;
                 case setReady:
-                    player.isReady(true);
+                    player.setReady(true);
                     return players;
                 default:
                     break;
@@ -91,7 +92,7 @@ public class GameService {
                             bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gameMsg)));
                         }
                         game.getWinner().ifPresent(winner -> {
-                            GameMessage gm = new GameMessage(GameAction.winner, winner.name);
+                            GameMessage gm = new GameMessage(GameAction.winner, winner.getName());
                             game = null;
                             bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gm)));
                         });
@@ -148,7 +149,7 @@ public class GameService {
     }
 
     private static Optional<Player> getPlayerBySession(Session session) {
-        return players.stream().filter(u -> u.session.equals(session)).findFirst();
+        return players.stream().filter(u -> u.getSession().equals(session)).findFirst();
     }
 
     private static void playerReady(Session session, GameMessage gameMessage) {
@@ -157,14 +158,14 @@ public class GameService {
             /* has grant start */
             Optional<Player> player = getPlayerBySession(session);
             bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
-                final List<Player> playerListList = players.stream().filter(u -> u.ready).collect(Collectors.toList());
+                final List<Player> playerListList = players.stream().filter(u -> u.isReady()).collect(Collectors.toList());
                 GameMessage startGameMsg = new GameMessage(GameAction.startGame, null);
                 bus.notify("game", Event.wrap(Tuple2.of(playerListList, startGameMsg)));
             });
         } else {
             Optional<Player> player = getPlayerBySession(session);
             bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
-                List<Player> playersNotReadyYet = players.stream().filter(u -> !u.ready).collect(Collectors.toList());
+                List<Player> playersNotReadyYet = players.stream().filter(u -> !u.isReady()).collect(Collectors.toList());
                 if (playersNotReadyYet.size() == 1) {
                     Player lastUser = playersNotReadyYet.iterator().next();
                     GameMessage grantStartGameMsg = new GameMessage(GameAction.grantStart, null);

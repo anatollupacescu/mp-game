@@ -4,11 +4,11 @@ import org.eclipse.jetty.websocket.api.Session;
 
 public class Player {
 
-    public final transient Session session;
+    private final transient Session session;
 
-    public String name;
-    public int color;
-    public boolean ready;
+    private String name;
+    private int color;
+    private boolean ready;
 
     private int cellCount;
 
@@ -28,10 +28,6 @@ public class Player {
         this.name = name;
     }
 
-    public void isReady(boolean b) {
-        this.ready = b;
-    }
-
     public boolean remainingCellCountIs(int remainingCellCount) {
         return this.cellCount == remainingCellCount;
     }
@@ -44,15 +40,43 @@ public class Player {
         this.cellCount = cellCount;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getName() {
+		return name;
+	}
 
-    public void setColor(int color) {
-        this.color = color;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    @Override
+	public int getColor() {
+		return color;
+	}
+
+	public void setColor(int color) {
+		this.color = color;
+	}
+
+	public boolean isReady() {
+		return ready;
+	}
+
+	public void setReady(boolean ready) {
+		this.ready = ready;
+	}
+
+	public int getCellCount() {
+		return cellCount;
+	}
+
+	public void setCellCount(int cellCount) {
+		this.cellCount = cellCount;
+	}
+
+	public Session getSession() {
+		return session;
+	}
+
+	@Override
     public boolean equals(Object o) {
         if (this == o)
             return true;

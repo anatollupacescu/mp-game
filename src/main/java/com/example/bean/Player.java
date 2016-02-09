@@ -9,11 +9,10 @@ public class Player {
     private String name;
     private int color;
     private boolean ready;
-
     private int cellCount;
+    private ReadyButton readyButtonState = ReadyButton.active;
 
     public Player(Session session) {
-        super();
         this.session = session;
     }
 
@@ -74,6 +73,14 @@ public class Player {
 
 	public Session getSession() {
 		return session;
+	}
+
+	public ReadyButton getReadyButtonState() {
+		return readyButtonState;
+	}
+
+	public void setReadyButtonState(ReadyButton readyButtonState) {
+		this.readyButtonState = readyButtonState;
 	}
 
 	@Override

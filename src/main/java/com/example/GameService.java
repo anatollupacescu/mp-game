@@ -27,7 +27,10 @@ import static reactor.bus.selector.Selectors.$;
 
 public class GameService {
 
-    private static final EventBus bus = EventBus.create();
+    private static final String GAME = "game";
+	private static final String PLAYER_LIST = "updatePlayerList";
+	private static final String BROADCAST_MESSAGE = "sendMessage";
+	private static final EventBus bus = EventBus.create();
     private static final Gson mapper = new GsonBuilder().create();
     private static final List<Player> players = new ArrayList<>();
     private static final Queue<Integer> colors = Lists.newLinkedList(IntStream.rangeClosed(1, 7).boxed().collect(Collectors.toList()));
@@ -36,9 +39,9 @@ public class GameService {
 
     static {
 
-        bus.on($("sendMessage"), (Event<Tuple2<List<Player>, GameMessage>> event) ->
-            event.getData().getT1().stream().forEach(u -> {
-                String str = mapper.toJson(event.getData().getT2());
+        bus.on($(BROADCAST_MESSAGE), (Event<GameMessage> event) ->
+            players.stream().forEach(u -> {
+                String str = mapper.toJson(event.getData());
                 try {
                     if (u.getSession().isOpen()) {
                         u.getSession().getRemote().sendString(str);
@@ -49,7 +52,7 @@ public class GameService {
             })
         );
 
-        bus.receive($("updatePlayerList"), (Event<Tuple2<PlayerEvent, Player>> ev) -> {
+        bus.receive($(PLAYER_LIST), (Event<Tuple2<PlayerEvent, Player>> ev) -> {
             Player player = ev.getData().getT2();
             switch (ev.getData().getT1()) {
                 case add:
@@ -69,7 +72,7 @@ public class GameService {
             throw new IllegalStateException();
         });
 
-        bus.on($("game"), new Consumer<Event<Tuple2<List<Player>, GameMessage>>>() {
+        bus.on($(GAME), new Consumer<Event<Tuple2<List<Player>, GameMessage>>>() {
 
             private Game game = null;
             private List<Player> playerList;
@@ -82,19 +85,19 @@ public class GameService {
                         game = new Game(playerList);
                         List<Integer> colorsArray = game.colorsArray();
                         GameMessage colorsArrayGameMsg = new GameMessage(GameAction.startGame, colorsArray.toString());
-                        bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, colorsArrayGameMsg)));
+                        bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(playerList, colorsArrayGameMsg)));
                         break;
                     case cellClick:
                         if(game == null) return;
                         Player player = ev.getData().getT1().iterator().next();
                         Double cellId = gameMsg.getData(Double.class);
                         if(game.markCell(player, cellId)) {
-                            bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gameMsg)));
+                            bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(playerList, gameMsg)));
                         }
                         game.getWinner().ifPresent(winner -> {
                             GameMessage gm = new GameMessage(GameAction.winner, winner.getName());
                             game = null;
-                            bus.notify("sendMessage", Event.wrap(Tuple2.of(playerList, gm)));
+                            bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(playerList, gm)));
                         });
                         break;
                     default:
@@ -124,17 +127,18 @@ public class GameService {
         GameMessage gameMessage = new GameMessage(GameAction.connect, players.toArray());
         List<Player> list = ImmutableList.of(new Player(session));
         Tuple2<List<Player>, GameMessage> tuple = Tuple2.of(list, gameMessage);
-        bus.notify("sendMessage", Event.wrap(tuple));
+        bus.notify(BROADCAST_MESSAGE, Event.wrap(tuple));
     }
 
     private static void broadcastUserList(List<Player> players) {
         GameMessage message = new GameMessage(GameAction.logIn, players.toArray());
-        bus.notify("sendMessage", Event.wrap(Tuple2.of(players, message)));
+        bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(players, message)));
     }
 
     private static void playerLogIn(Session session, GameMessage gameMessage) {
         Player player = new Player(session, gameMessage.getData(String.class));
-        bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.add, player)), event -> {
+        bus.sendAndReceive(PLAYER_LIST, Event.wrap(Tuple2.of(PlayerEvent.add, player)), event -> {
+        	@SuppressWarnings("unchecked")
             List<Player> playerList = (List<Player>) event.getData();
             broadcastUserList(playerList);
         });
@@ -142,8 +146,9 @@ public class GameService {
 
     public static void playerDisconnect(Session session) {
         Optional<Player> player = getPlayerBySession(session);
-        bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.remove, player.get())), response -> {
-            List<Player> playerList = (List<Player>) response.getData();
+        bus.sendAndReceive(PLAYER_LIST, Event.wrap(Tuple2.of(PlayerEvent.remove, player.get())), response -> {
+            @SuppressWarnings("unchecked")
+			List<Player> playerList = (List<Player>) response.getData();
             broadcastUserList(playerList);
         });
     }
@@ -157,28 +162,29 @@ public class GameService {
         if (Boolean.TRUE.equals(isReady)) {
             /* has grant start */
             Optional<Player> player = getPlayerBySession(session);
-            bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
+            bus.sendAndReceive(PLAYER_LIST, Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
                 final List<Player> playerListList = players.stream().filter(u -> u.isReady()).collect(Collectors.toList());
                 GameMessage startGameMsg = new GameMessage(GameAction.startGame, null);
-                bus.notify("game", Event.wrap(Tuple2.of(playerListList, startGameMsg)));
+                bus.notify(GAME, Event.wrap(Tuple2.of(playerListList, startGameMsg)));
             });
         } else {
             Optional<Player> player = getPlayerBySession(session);
-            bus.sendAndReceive("updatePlayerList", Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
+            bus.sendAndReceive(PLAYER_LIST, Event.wrap(Tuple2.of(PlayerEvent.setReady, player.get())), response -> {
                 List<Player> playersNotReadyYet = players.stream().filter(u -> !u.isReady()).collect(Collectors.toList());
                 if (playersNotReadyYet.size() == 1) {
                     Player lastUser = playersNotReadyYet.iterator().next();
                     GameMessage grantStartGameMsg = new GameMessage(GameAction.grantStart, null);
-                    bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(lastUser), grantStartGameMsg)));
+                    bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(ImmutableList.of(lastUser), grantStartGameMsg)));
                 }
             });
             GameMessage startGameMsg = new GameMessage(GameAction.ready, null);
-            bus.notify("sendMessage", Event.wrap(Tuple2.of(ImmutableList.of(player.get()), startGameMsg)));
+            bus.notify(BROADCAST_MESSAGE, Event.wrap(Tuple2.of(ImmutableList.of(player.get()), startGameMsg)));
         }
     }
 
     private static void cellClick(Session session, GameMessage gameMessage) {
-        Optional<Player> player = getPlayerBySession(session);
-        bus.notify("game", Event.wrap(Tuple2.of(ImmutableList.of(player.get()), gameMessage)));
+        getPlayerBySession(session).ifPresent(player -> {
+        	bus.notify(GAME, Event.wrap(Tuple2.of(ImmutableList.of(player), gameMessage)));
+        });
     }
 }

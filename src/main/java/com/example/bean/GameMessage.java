@@ -23,8 +23,9 @@ public class GameMessage {
         return data;
     }
 
-    public <T> T getData(Class<T> clzz) {
-        return (T)data;
+    @SuppressWarnings("unchecked")
+	public <T> T getData(Class<T> clzz) {
+		return (T)data;
     }
 
     public void setData(Object data) {

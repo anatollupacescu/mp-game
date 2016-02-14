@@ -57,8 +57,9 @@ public class GatewayService {
 	}
 
 	public static void sessionCreated(Session session) {
-		ClientMessage<List<Player>> message = ClientMessage.create(ClientAction.playerList, playerService.getPlayerList());
-		messageService.sendMessage(session, message );
+		ClientMessage<List<Player>> message = ClientMessage.create(ClientAction.playerList,
+				playerService.getPlayerList());
+		messageService.sendMessage(session, message);
 	}
 
 	public static void playerDisconnect(Session session) {

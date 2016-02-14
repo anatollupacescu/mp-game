@@ -20,31 +20,31 @@ import skeleton.service.MessageService;
 
 public class MessageServiceImpl implements MessageService {
 
-	private final RingBufferProcessor<Tuple2<Player, ClientMessage>> processor = RingBufferProcessor.create();
-	private final Stream<Tuple2<Player, ClientMessage>> stream = Streams.wrap(processor);
+	private final RingBufferProcessor<Tuple2<Player, ClientMessage<?>>> processor = RingBufferProcessor.create();
+	private final Stream<Tuple2<Player, ClientMessage<?>>> stream = Streams.wrap(processor);
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	@Override
 	public void broadcastPlayerList(List<Player> playerList) {
-		ClientMessage message = ClientMessage.create(ClientAction.playerList, playerList);
+		ClientMessage<List<Player>> message = ClientMessage.create(ClientAction.playerList, playerList);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastGameTable(Object[] gameData) {
-		ClientMessage message = ClientMessage.create(ClientAction.gameData, gameData);
+		ClientMessage<Object[]> message = ClientMessage.create(ClientAction.gameData, gameData);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastMarkedCell(Cell cell) {
-		ClientMessage message = ClientMessage.create(ClientAction.markedCell, cell);
+		ClientMessage<Cell> message = ClientMessage.create(ClientAction.markedCell, cell);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastWinner(Player winner) {
-		ClientMessage message = ClientMessage.create(ClientAction.winner, winner);
+		ClientMessage<Player> message = ClientMessage.create(ClientAction.winner, winner);
 		broadcast(message);
 	}
 
@@ -52,20 +52,20 @@ public class MessageServiceImpl implements MessageService {
 	public Control registerSession(Player player) {
 		return stream.consume(message -> {
 			Player destination = message.getT1();
-			ClientMessage gameMessage = message.getT2();
+			ClientMessage<?> clientMessage = message.getT2();
 			if (destination == null || player.getName().equals(destination.getName())) {
 				Session session = destination.getSession();
-				sendMessage(session, gameMessage);
+				sendMessage(session, clientMessage);
 			}
 		});
 	}
 
-	public void broadcast(ClientMessage message) {
+	public void broadcast(ClientMessage<?> message) {
 		processor.onNext(Tuple2.of(null, message));
 	}
 
 	@Override
-	public void sendMessage(Session session, ClientMessage clientMessage) {
+	public void sendMessage(Session session, ClientMessage<?> clientMessage) {
 		try {
 			String message = mapper.writeValueAsString(clientMessage);
 			if (session.isOpen()) {
@@ -77,7 +77,7 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	@Override
-	public void sendMessage(Player player, ClientMessage message) {
+	public void sendMessage(Player player, ClientMessage<?> message) {
 		processor.onNext(Tuple2.of(player, message));
 	}
 }

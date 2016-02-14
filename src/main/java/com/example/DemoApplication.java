@@ -19,72 +19,71 @@ import org.springframework.context.annotation.Configuration;
 @SpringBootApplication
 public class DemoApplication {
 
-    /**
-     * @param args Command line args
-     * @throws Exception
-     */
-    public static void main(String[] args) throws Exception {
-        ConfigurableApplicationContext context = SpringApplication.run(DemoApplication.class, args);
-        Server server = context.getBean(Server.class);
-        server.start();
-        server.join();
-    }
+	/**
+	 * @param args
+	 *            Command line args
+	 * @throws Exception
+	 */
+	public static void main(String[] args) throws Exception {
+		ConfigurableApplicationContext context = SpringApplication.run(DemoApplication.class, args);
+		Server server = context.getBean(Server.class);
+		server.start();
+		server.join();
+	}
 
-    @Configuration
-    public static class AppConfiguration {
+	@Configuration
+	public static class AppConfiguration {
 
-        public
-        @Bean
-        Server server() {
-            Server server = new Server(8090);
+		public @Bean Server server() {
+			Server server = new Server(8090);
 
-            ServletContextHandler ctx = new ServletContextHandler();
-            ctx.setContextPath("/");
+			ServletContextHandler ctx = new ServletContextHandler();
+			ctx.setContextPath("/");
 			ctx.addServlet(MpGameServiceSocketServlet.class, "/mpgame");
 
-            server.setHandler(ctx);
+			server.setHandler(ctx);
 
-            return server;
-        }
+			return server;
+		}
 
-        public static class MpGameServiceSocketServlet extends WebSocketServlet {
+		public static class MpGameServiceSocketServlet extends WebSocketServlet {
 
-            /**
-             *
-             */
-            private static final long serialVersionUID = 1L;
+			/**
+			 *
+			 */
+			private static final long serialVersionUID = 1L;
 
-            @Override
-            public void configure(WebSocketServletFactory factory) {
-                factory.register(MPGameWebSocket.class);
-            }
-        }
-        
-        @WebSocket
-        class MPGameWebSocket {
+			@Override
+			public void configure(WebSocketServletFactory factory) {
+				factory.register(MPGameWebSocket.class);
+			}
+		}
 
-            private Session session;
+		@WebSocket
+		class MPGameWebSocket {
 
-            @OnWebSocketMessage
-            public void handleMessage(String message) {
-                GatewayService.handleClientMessage(message, session);
-            }
+			private Session session;
 
-            @OnWebSocketConnect
-            public void handleConnect(Session session) {
-                this.session = session;
-                GatewayService.sessionCreated(session);
-            }
+			@OnWebSocketMessage
+			public void handleMessage(String message) {
+				GatewayService.handleClientMessage(message, session);
+			}
 
-            @OnWebSocketClose
-            public void handleClose(int statusCode, String reason) {
-                GatewayService.playerDisconnect(session);
-            }
+			@OnWebSocketConnect
+			public void handleConnect(Session session) {
+				this.session = session;
+				GatewayService.sessionCreated(session);
+			}
 
-            @OnWebSocketError
-            public void handleError(Throwable error) {
-                error.printStackTrace();
-            }
-        }
-    }
+			@OnWebSocketClose
+			public void handleClose(int statusCode, String reason) {
+				GatewayService.playerDisconnect(session);
+			}
+
+			@OnWebSocketError
+			public void handleError(Throwable error) {
+				error.printStackTrace();
+			}
+		}
+	}
 }

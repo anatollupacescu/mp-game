@@ -1,14 +1,19 @@
 package com.example.service;
 
-import java.util.Optional;
-
+import com.example.service.bean.game.GameMessage;
+import reactor.core.processor.RingBufferProcessor;
+import reactor.fn.tuple.Tuple2;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.GameService;
 
+import java.util.Optional;
+
 public class GameServiceImpl implements GameService {
 
-	@Override
+    private final RingBufferProcessor<Tuple2<Player, GameMessage<?>>> processor = RingBufferProcessor.create();
+
+    @Override
 	public Player getWinner() {
 		// TODO Auto-generated method stub
 		return null;
@@ -38,13 +43,12 @@ public class GameServiceImpl implements GameService {
 		return false;
 	}
 
-	@Override
-	public void markCell(Player user, Cell cell) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void markCell(Player user, Cell cell) {
 
-	@Override
+    }
+
+    @Override
 	public Optional<Cell> getCellById(String value) {
 		// TODO Auto-generated method stub
 		return null;

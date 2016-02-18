@@ -1,7 +1,6 @@
 package com.example;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
 
@@ -11,9 +10,7 @@ import com.example.service.PlayerServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import skeleton.Main;
-import skeleton.bean.client.ClientAction;
-import skeleton.bean.client.ClientMessage;
-import skeleton.bean.player.Player;
+import com.example.service.bean.client.ClientMessage;
 import skeleton.service.GameService;
 import skeleton.service.MainService;
 import skeleton.service.MessageService;
@@ -33,7 +30,7 @@ public class GatewayService {
 		try {
 			clientMessage = mapper.readValue(message, ClientMessage.class);
 		} catch (IOException e) {
-			messageService.sendMessage(session, ClientMessage.createLog("Could not parse message"));
+			e.printStackTrace();
 		}
 		if (clientMessage != null) {
 			switch (clientMessage.getAction()) {
@@ -41,7 +38,9 @@ public class GatewayService {
 				main.playerLogIn(session, clientMessage.getValue(String.class));
 				break;
 			case ready:
-				playerService.getPlayerBySession(session).ifPresent(player -> main.playerReady(player));
+				playerService.getPlayerBySession(session).ifPresent(player -> {
+                    main.playerReady(player);
+                });
 				break;
 			case cellClick:
 				gameService.getCellById(clientMessage.getValue(String.class)).ifPresent(cell -> {
@@ -51,15 +50,13 @@ public class GatewayService {
 				});
 				break;
 			default:
-				messageService.sendMessage(session, ClientMessage.createLog("Unknown action"));
+				System.err.println("Unknown action");
 			}
 		}
 	}
 
 	public static void sessionCreated(Session session) {
-		ClientMessage<List<Player>> message = ClientMessage.create(ClientAction.playerList,
-				playerService.getPlayerList());
-		messageService.sendMessage(session, message);
+		messageService.sendPlayerList(session, playerService.getPlayerList());
 	}
 
 	public static void playerDisconnect(Session session) {

@@ -8,8 +8,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import skeleton.bean.game.Game;
-import skeleton.bean.player.Player;
+import com.example.service.bean.game.Game;
+import skeleton.player.Player;
 
 public class GameTest {
 

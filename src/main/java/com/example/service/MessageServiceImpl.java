@@ -12,8 +12,8 @@ import reactor.fn.tuple.Tuple2;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 import reactor.rx.action.Control;
-import skeleton.bean.client.ClientAction;
-import skeleton.bean.client.ClientMessage;
+import com.example.service.bean.client.ClientAction;
+import com.example.service.bean.client.ClientMessage;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.MessageService;
@@ -49,6 +49,11 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	@Override
+	public void sendMessage(Session session, String message) {
+
+	}
+
+	@Override
 	public Control registerSession(Player player) {
 		return stream.consume(message -> {
 			Player destination = message.getT1();
@@ -60,12 +65,26 @@ public class MessageServiceImpl implements MessageService {
 		});
 	}
 
-	public void broadcast(ClientMessage<?> message) {
-		processor.onNext(Tuple2.of(null, message));
+    @Override
+	public void alert(Player player, String message) {
+		processor.onNext(Tuple2.of(player, ClientMessage.createAlert(message)));
+	}
+
+    @Override
+	public void log(Player player, String message) {
+		processor.onNext(Tuple2.of(player, ClientMessage.createLog(message)));
 	}
 
 	@Override
-	public void sendMessage(Session session, ClientMessage<?> clientMessage) {
+	public void sendPlayerList(Session session, List<Player> playerList) {
+
+	}
+
+	private void broadcast(ClientMessage<?> message) {
+		processor.onNext(Tuple2.of(null, message));
+	}
+
+	private void sendMessage(Session session, ClientMessage<?> clientMessage) {
 		try {
 			String message = mapper.writeValueAsString(clientMessage);
 			if (session.isOpen()) {
@@ -74,10 +93,5 @@ public class MessageServiceImpl implements MessageService {
 		} catch (IOException e) {
 			throw new RuntimeException();
 		}
-	}
-
-	@Override
-	public void sendMessage(Player player, ClientMessage<?> message) {
-		processor.onNext(Tuple2.of(player, message));
 	}
 }

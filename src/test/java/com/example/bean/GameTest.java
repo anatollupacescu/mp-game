@@ -9,7 +9,8 @@ import java.util.List;
 import org.junit.Test;
 
 import com.example.service.bean.game.Game;
-import skeleton.player.Player;
+
+import skeleton.bean.player.Player;
 
 public class GameTest {
 

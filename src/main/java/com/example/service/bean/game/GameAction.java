@@ -5,5 +5,5 @@ package com.example.service.bean.game;
  */
 public enum GameAction {
 
-    cellClick, playerReady
+    cellClick, stopGame, playerReady
 }

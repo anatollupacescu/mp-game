@@ -1,17 +1,21 @@
 package com.example.service;
 
+import com.example.service.bean.game.Game;
 import com.example.service.bean.game.GameMessage;
 import reactor.core.processor.RingBufferProcessor;
 import reactor.fn.tuple.Tuple2;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.GameService;
 
-import java.util.Optional;
-
 public class GameServiceImpl implements GameService {
 
     private final RingBufferProcessor<Tuple2<Player, GameMessage<?>>> processor = RingBufferProcessor.create();
+	private final Stream<Tuple2<Player, GameMessage<?>>> stream = Streams.wrap(processor);
+
+    private Game game;
 
     @Override
 	public Player getWinner() {
@@ -20,15 +24,15 @@ public class GameServiceImpl implements GameService {
 	}
 
 	@Override
-	public boolean startGame() {
-		// TODO Auto-generated method stub
-		return false;
+	public void startGame() {
+		stream.consume(playerGameMessageTuple2 -> {
+
+        });
 	}
 
 	@Override
-	public boolean stopGame() {
-		// TODO Auto-generated method stub
-		return false;
+	public void stopGame() {
+        processor.onNext(Tuple2.of(null, GameMessage.stopGame()));
 	}
 
 	@Override
@@ -39,18 +43,11 @@ public class GameServiceImpl implements GameService {
 
 	@Override
 	public boolean isGameRunning() {
-		// TODO Auto-generated method stub
-		return false;
+		return game != null;
 	}
 
     @Override
     public void markCell(Player user, Cell cell) {
-
+		processor.onNext(Tuple2.of(user, GameMessage.markCell(cell)));
     }
-
-    @Override
-	public Optional<Cell> getCellById(String value) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

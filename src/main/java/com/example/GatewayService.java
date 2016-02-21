@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import skeleton.Main;
 import com.example.service.bean.client.ClientMessage;
-import skeleton.service.GameService;
-import skeleton.service.MainService;
+import skeleton.service.GameStage;
+import skeleton.service.Main;
 import skeleton.service.MessageService;
 import skeleton.service.PlayerService;
 
@@ -20,9 +20,9 @@ public class GatewayService {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static final PlayerService playerService = new PlayerServiceImpl();
-	private static final GameService gameService = new GameServiceImpl();
+	private static final GameStage gameService = new GameServiceImpl();
 	private static final MessageService messageService = new MessageServiceImpl();
-	private static final MainService main = new Main(playerService, gameService, messageService);
+	private static final Main main = new Main(playerService, gameService, messageService);
 
 	@SuppressWarnings("unchecked")
 	public static void handleClientMessage(String message, Session session) {
@@ -55,10 +55,12 @@ public class GatewayService {
 		}
 	}
 
+	/* load page */
 	public static void sessionCreated(Session session) {
 		messageService.sendPlayerList(session, playerService.getPlayerList());
 	}
 
+    /* disconnect */
 	public static void playerDisconnect(Session session) {
 		playerService.getPlayerBySession(session).ifPresent(player -> {
 			main.playerLogOut(player);

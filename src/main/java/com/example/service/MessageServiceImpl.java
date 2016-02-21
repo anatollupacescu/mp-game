@@ -49,11 +49,6 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	@Override
-	public void sendMessage(Session session, String message) {
-
-	}
-
-	@Override
 	public Control registerSession(Player player) {
 		return stream.consume(message -> {
 			Player destination = message.getT1();
@@ -77,7 +72,8 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public void sendPlayerList(Session session, List<Player> playerList) {
-
+		ClientMessage playerListMessage = ClientMessage.create(ClientAction.playerList, playerList);
+		broadcast(playerListMessage);
 	}
 
 	private void broadcast(ClientMessage<?> message) {

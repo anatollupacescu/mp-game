@@ -1,5 +1,7 @@
 package com.example.service;
 
+import java.util.Optional;
+
 import com.example.service.bean.game.Game;
 import com.example.service.bean.game.GameMessage;
 import reactor.core.processor.RingBufferProcessor;
@@ -26,7 +28,7 @@ public class GameServiceImpl implements GameService {
 	@Override
 	public void startGame() {
 		stream.consume(playerGameMessageTuple2 -> {
-
+			// TODO Auto-generated method stub
         });
 	}
 
@@ -50,4 +52,10 @@ public class GameServiceImpl implements GameService {
     public void markCell(Player user, Cell cell) {
 		processor.onNext(Tuple2.of(user, GameMessage.markCell(cell)));
     }
+
+	@Override
+	public Optional<Cell> getCellById(String value) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

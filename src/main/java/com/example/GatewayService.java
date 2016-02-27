@@ -27,24 +27,19 @@ public class GatewayService {
 
 	public static void handleClientMessage(String message, Session session) {
 		parseClientMessage(message).ifPresent(clientMessage -> {
+			String data = clientMessage.getValue(String.class);
 			switch (clientMessage.getAction()) {
 			case logIn:
-				main.playerLogIn(session, clientMessage.getValue(String.class));
+				main.playerLogIn(session, data);
 				break;
 			case ready:
-				playerService.getPlayerBySession(session).ifPresent(player -> {
-                    main.playerReady(player);
-                });
+				main.playerReady(session);
 				break;
 			case cellClick:
-				gameService.getCellById(clientMessage.getValue(String.class)).ifPresent(cell -> {
-					playerService.getPlayerBySession(session).ifPresent(player -> {
-						main.playerClickedCell(player, cell);
-					});
-				});
+				main.playerClickedCell(session, data);
 				break;
 			default:
-				System.err.println("Unknown action");
+				messageService.log(session, "Unknown action");
 			}
 		});
 	}
@@ -64,10 +59,8 @@ public class GatewayService {
 		messageService.sendPlayerList(session, playerService.getPlayerList());
 	}
 
-    /* disconnect */
+	/* disconnect */
 	public static void playerDisconnect(Session session) {
-		playerService.getPlayerBySession(session).ifPresent(player -> {
-			main.playerLogOut(player);
-		});
+		main.playerLogOut(session);
 	}
 }

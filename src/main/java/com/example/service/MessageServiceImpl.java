@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import com.example.service.bean.client.ClientAction;
+import com.example.service.bean.client.ClientMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.core.processor.RingBufferProcessor;
@@ -12,8 +14,6 @@ import reactor.fn.tuple.Tuple2;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 import reactor.rx.action.Control;
-import com.example.service.bean.client.ClientAction;
-import com.example.service.bean.client.ClientMessage;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.MessageService;
@@ -72,7 +72,7 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public void sendPlayerList(Session session, List<Player> playerList) {
-		ClientMessage playerListMessage = ClientMessage.create(ClientAction.playerList, playerList);
+		ClientMessage<List<Player>> playerListMessage = ClientMessage.create(ClientAction.playerList, playerList);
 		broadcast(playerListMessage);
 	}
 
@@ -89,5 +89,15 @@ public class MessageServiceImpl implements MessageService {
 		} catch (IOException e) {
 			throw new RuntimeException();
 		}
+	}
+
+	@Override
+	public void alert(Session session, String message) {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void log(Session session, String message) {
+		// TODO Auto-generated method stub
 	}
 }

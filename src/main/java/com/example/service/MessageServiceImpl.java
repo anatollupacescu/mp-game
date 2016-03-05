@@ -93,11 +93,13 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public void alert(Session session, String message) {
-		// TODO Auto-generated method stub
+		ClientMessage<String> clientMessage = ClientMessage.createAlert(message);
+		sendMessage(session, clientMessage);
 	}
 
 	@Override
 	public void log(Session session, String message) {
-		// TODO Auto-generated method stub
+		ClientMessage<String> clientMessage = ClientMessage.createLog(message);
+		sendMessage(session, clientMessage);
 	}
 }

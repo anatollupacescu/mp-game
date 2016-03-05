@@ -6,29 +6,50 @@ import java.util.Optional;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import reactor.core.processor.RingBufferProcessor;
+import reactor.fn.tuple.Tuple2;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
 import skeleton.bean.player.Player;
 import skeleton.service.PlayerService;
 
 public class PlayerServiceImpl implements PlayerService {
 
+	private final RingBufferProcessor<Tuple2<PlayerAction, Player>> processor = RingBufferProcessor.create();
+	private final Stream<Tuple2<PlayerAction, Player>> stream = Streams.wrap(processor);
 	private final List<Player> playerList = new ArrayList<>();
+
+	{
+		stream.consume(tuple -> {
+			Player player = tuple.getT2();
+			switch(tuple.getT1()) {
+			case addPlayer:
+				playerList.add(player);
+				break;
+			case removePlayer:
+				break;
+			default:
+				throw new IllegalStateException();
+			}
+		});
+	}
 
 	@Override
 	public Player addPlayer(Session session, String name) {
-		// TODO Auto-generated method stub
-		return null;
+		Player player = new Player(session, name);
+		processor.onNext(Tuple2.of(PlayerAction.addPlayer, player));
+		return player;
 	}
 
 	@Override
-	public void removePlayer(Player Player) {
-		// TODO Auto-generated method stub
-
+	public void removePlayer(Player player) {
+		processor.onNext(Tuple2.of(PlayerAction.addPlayer, player));
 	}
 
 	@Override
-	public boolean isTheLastPlayerReady(Player player) {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean allPlayersReady() {
+		Optional<Player> player = playerList.stream().filter(p -> !p.isReady()).findFirst();
+		return !player.isPresent();
 	}
 
 	@Override
@@ -38,7 +59,15 @@ public class PlayerServiceImpl implements PlayerService {
 
 	@Override
 	public List<Player> getPlayerList() {
-		// TODO Auto-generated method stub
-		return null;
+		return playerList;
+	}
+
+	@Override
+	public boolean isPlayerLoggedIn(Session session) {
+		return getPlayerBySession(session).isPresent();
+	}
+
+	enum PlayerAction {
+		addPlayer, removePlayer
 	}
 }

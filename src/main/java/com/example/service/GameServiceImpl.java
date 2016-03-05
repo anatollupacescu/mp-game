@@ -3,7 +3,7 @@ package com.example.service;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.service.bean.game.Game;
+import com.example.bean.game.Game;
 
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;

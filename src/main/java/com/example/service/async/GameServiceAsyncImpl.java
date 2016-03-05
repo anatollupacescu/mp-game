@@ -3,8 +3,8 @@ package com.example.service.async;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.service.bean.game.Game;
-import com.example.service.bean.game.GameMessage;
+import com.example.bean.game.Game;
+import com.example.bean.game.GameMessage;
 
 import reactor.core.processor.RingBufferProcessor;
 import reactor.rx.Stream;

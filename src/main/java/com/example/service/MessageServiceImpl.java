@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-import com.example.service.bean.client.ClientAction;
-import com.example.service.bean.client.ClientMessage;
+import com.example.bean.client.ClientAction;
+import com.example.bean.client.ClientMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.rx.action.Control;

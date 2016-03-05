@@ -8,7 +8,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import com.example.service.GameServiceImpl;
 import com.example.service.MessageServiceImpl;
 import com.example.service.PlayerServiceImpl;
-import com.example.service.bean.client.ClientMessage;
+import com.example.bean.client.ClientMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import skeleton.Main;

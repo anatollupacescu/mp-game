@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.example.service.bean.game.Game;
+import com.example.bean.game.Game;
 
 import skeleton.bean.player.Player;
 

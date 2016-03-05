@@ -1,4 +1,4 @@
-package com.example.service.bean.client;
+package com.example.bean.client;
 
 public enum ClientAction {
 

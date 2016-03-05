@@ -1,4 +1,4 @@
-package com.example.service.bean.game;
+package com.example.bean.game;
 
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;

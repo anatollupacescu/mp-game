@@ -1,4 +1,4 @@
-package com.example.service.bean.game;
+package com.example.bean.game;
 
 import java.util.List;
 

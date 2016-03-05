@@ -43,7 +43,7 @@ public class PlayerServiceImpl implements PlayerService {
 
 	@Override
 	public void removePlayer(Player player) {
-		processor.onNext(Tuple2.of(PlayerAction.addPlayer, player));
+		processor.onNext(Tuple2.of(PlayerAction.removePlayer, player));
 	}
 
 	@Override

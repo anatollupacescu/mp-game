@@ -13,49 +13,51 @@ public class Game {
 
 	final int size = 8;
 
-	private final List<Cell> table;
-	private final List<Player> playerList;
+	private final List<Cell> cells;
+	private final List<Player> players;
 
 	public Game(List<Player> players) {
-		this.table = new LinkedList<>();
-		this.playerList = players;
+		this.cells = new LinkedList<>();
+		this.players = players;
 
 		int cellPerColor = (size * size) / (players.size() + 1);
 
 		players.stream().forEach(player -> {
 			for (int j = 0; j < cellPerColor; j++) {
 				Cell cell = new Cell(player);
-				table.add(cell);
+				cells.add(cell);
 			}
 			player.setInitialCellCount(cellPerColor);
 		});
 
-		for (int i = table.size(); i < size * size; i++) {
-			table.add(new Cell(null));
+		for (int i = cells.size(); i < size * size; i++) {
+			cells.add(new Cell(null));
 		}
-		Collections.shuffle(table);
+		Collections.shuffle(cells);
 	}
 
-	public boolean markCell(Player player, Double data) {
-		Cell cellAtPosition = table.get(data.intValue());
-		if (player.equals(cellAtPosition.getPlayer()) && !cellAtPosition.isChecked()) {
-			cellAtPosition.check();
-			player.decrementCellCount();
-			return true;
-		}
-		return false;
+	public void markCell(Cell c) {
+		getCells().stream().filter(cell -> cell.equals(c)).forEach(cell -> cell.check());
 	}
 
 	public Optional<Player> getWinner() {
-		return playerList.stream().filter(player -> player.remainingCellCountIs(0)).findFirst();
+		return players.stream().filter(player -> player.getCellCount() == 0).findFirst();
 	}
 
 	public List<Integer> colorsArray() {
-		return table.stream().mapToInt(cell -> {
+		return cells.stream().mapToInt(cell -> {
 			if (cell.getPlayer() == null) {
 				return 0;
 			}
 			return cell.getPlayer().getColor();
 		}).boxed().collect(Collectors.toList());
+	}
+
+	public Optional<Cell> getCellByIndex(int index) {
+		return Optional.ofNullable(cells.get(index));
+	}
+	
+	public List<Cell> getCells() {
+		return cells;
 	}
 }

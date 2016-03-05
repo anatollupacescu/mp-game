@@ -1,46 +1,36 @@
 package com.example.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.example.service.bean.game.Game;
-import com.example.service.bean.game.GameMessage;
-import reactor.core.processor.RingBufferProcessor;
-import reactor.fn.tuple.Tuple2;
-import reactor.rx.Stream;
-import reactor.rx.Streams;
+
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.GameService;
 
 public class GameServiceImpl implements GameService {
 
-    private final RingBufferProcessor<Tuple2<Player, GameMessage<?>>> processor = RingBufferProcessor.create();
-	private final Stream<Tuple2<Player, GameMessage<?>>> stream = Streams.wrap(processor);
+	private Game game;
 
-    private Game game;
-
-    @Override
+	@Override
 	public Player getWinner() {
-		// TODO Auto-generated method stub
-		return null;
+		return game.getWinner().get();
 	}
 
 	@Override
-	public void startGame() {
-		stream.consume(playerGameMessageTuple2 -> {
-			// TODO Auto-generated method stub
-        });
+	public void startGame(List<Player> playerList) {
+		game = new Game(playerList);
 	}
 
 	@Override
 	public void stopGame() {
-        processor.onNext(Tuple2.of(null, GameMessage.stopGame()));
+		game = null;
 	}
 
 	@Override
-	public Object[] getGameData() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Cell> getGameData() {
+		return game.getCells();
 	}
 
 	@Override
@@ -48,14 +38,19 @@ public class GameServiceImpl implements GameService {
 		return game != null;
 	}
 
-    @Override
-    public void markCell(Player user, Cell cell) {
-		processor.onNext(Tuple2.of(user, GameMessage.markCell(cell)));
-    }
+	@Override
+	public void markCell(Cell cell) {
+		game.markCell(cell);
+	}
 
 	@Override
-	public Optional<Cell> getCellById(String value) {
-		// TODO Auto-generated method stub
-		return null;
+	public Optional<Cell> getCellByIndex(String id) {
+		int index;
+		try {
+			index = Integer.valueOf(id);
+		} catch(Exception e) {
+			return Optional.empty();
+		}
+		return game.getCellByIndex(index);
 	}
 }

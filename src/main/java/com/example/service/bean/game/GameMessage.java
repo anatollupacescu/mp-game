@@ -1,20 +1,19 @@
 package com.example.service.bean.game;
 
+import java.util.List;
+
 import skeleton.bean.game.Cell;
+import skeleton.bean.player.Player;
 
 public class GameMessage<T> {
 
-    private final GameAction action;
+    public final GameAction action;
 
     private final T data;
 
     public GameMessage(GameAction action, T data) {
         this.action = action;
         this.data = data;
-    }
-
-    public GameAction getAction() {
-        return action;
     }
 
     public T getData() {
@@ -25,7 +24,11 @@ public class GameMessage<T> {
         return new GameMessage(GameAction.cellClick, cell);
     }
 
-    public static GameMessage stopGame() {
+    public static GameMessage<?> stopGame() {
         return new GameMessage(GameAction.stopGame, null);
     }
+
+	public static GameMessage<?> startGame(List<Player> playerList) {
+		return new GameMessage(GameAction.startGame, playerList);
+	}
 }

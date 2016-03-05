@@ -1,7 +1,6 @@
-package com.example.service;
+package com.example.service.async;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -10,15 +9,20 @@ import com.example.service.bean.client.ClientAction;
 import com.example.service.bean.client.ClientMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import reactor.core.processor.RingBufferProcessor;
+import reactor.fn.tuple.Tuple2;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
 import reactor.rx.action.Control;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.MessageService;
 
-public class MessageServiceImpl implements MessageService {
+public class MessageServiceAsyncImpl implements MessageService {
 
+	private final RingBufferProcessor<Tuple2<Player, ClientMessage<?>>> processor = RingBufferProcessor.create();
+	private final Stream<Tuple2<Player, ClientMessage<?>>> stream = Streams.wrap(processor);
 	private final ObjectMapper mapper = new ObjectMapper();
-	private final List<Player> players = new ArrayList<>();
 
 	@Override
 	public void broadcastPlayerList(List<Player> playerList) {
@@ -46,18 +50,24 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public Control registerSession(Player player) {
-		players.add(player);
-		return null;
+		return stream.consume(message -> {
+			Player destination = message.getT1();
+			ClientMessage<?> clientMessage = message.getT2();
+			if (destination == null || player.getName().equals(destination.getName())) {
+				Session session = destination.getSession();
+				sendMessage(session, clientMessage);
+			}
+		});
 	}
 
     @Override
 	public void alert(Player player, String message) {
-		sendMessage(player.getSession(), ClientMessage.createAlert(message));
+		processor.onNext(Tuple2.of(player, ClientMessage.createAlert(message)));
 	}
 
     @Override
 	public void log(Player player, String message) {
-    	sendMessage(player.getSession(), ClientMessage.createLog(message));
+		processor.onNext(Tuple2.of(player, ClientMessage.createLog(message)));
 	}
 
 	@Override
@@ -67,9 +77,7 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	private void broadcast(ClientMessage<?> message) {
-		players.stream().forEach(player -> {
-			sendMessage(player.getSession(), message);
-		});
+		processor.onNext(Tuple2.of(null, message));
 	}
 
 	private void sendMessage(Session session, ClientMessage<?> clientMessage) {

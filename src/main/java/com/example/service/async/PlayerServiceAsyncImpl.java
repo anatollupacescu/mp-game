@@ -1,4 +1,4 @@
-package com.example.service;
+package com.example.service.async;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,23 +6,45 @@ import java.util.Optional;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import reactor.core.processor.RingBufferProcessor;
+import reactor.fn.tuple.Tuple2;
+import reactor.rx.Stream;
+import reactor.rx.Streams;
 import skeleton.bean.player.Player;
 import skeleton.service.PlayerService;
 
-public class PlayerServiceImpl implements PlayerService {
+public class PlayerServiceAsyncImpl implements PlayerService {
 
+	private final RingBufferProcessor<Tuple2<PlayerAction, Player>> processor = RingBufferProcessor.create();
+	private final Stream<Tuple2<PlayerAction, Player>> stream = Streams.wrap(processor);
 	private final List<Player> playerList = new ArrayList<>();
 	
+	{
+		stream.consume(tuple -> {
+			Player player = tuple.getT2();
+			switch(tuple.getT1()) {
+			case addPlayer:
+				playerList.add(player);
+				break;
+			case removePlayer:
+				playerList.remove(player);
+				break;
+			default:
+				throw new IllegalStateException();
+			}
+		});
+	}
+
 	@Override
 	public Player addPlayer(Session session, String name) {
 		Player player = new Player(session, name);
-		playerList.add(player);
+		processor.onNext(Tuple2.of(PlayerAction.addPlayer, player));
 		return player;
 	}
 
 	@Override
 	public void removePlayer(Player player) {
-		playerList.remove(player);
+		processor.onNext(Tuple2.of(PlayerAction.removePlayer, player));
 	}
 
 	@Override

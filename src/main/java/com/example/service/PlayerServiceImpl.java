@@ -17,6 +17,7 @@ public class PlayerServiceImpl implements PlayerService {
 	public Player addPlayer(Session session, String name) {
 		Player player = new Player(session, name);
 		playerList.add(player);
+		player.setColor(playerList.size());
 		return player;
 	}
 

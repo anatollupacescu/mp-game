@@ -4,5 +4,5 @@ public enum ClientAction {
 
 	/* client --> */logIn, ready, cellClick,
 	
-	playerList, gameData, markedCell, winner, alert, log /* --> client */, 
+	playerList, gameData, markedCell, winner, alert, log /* server */, 
 }

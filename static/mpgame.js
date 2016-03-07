@@ -14,27 +14,25 @@ $(document).ready(function () {
         } else {
             ws.send(JSON.stringify({
                 action: 'logIn',
-                data: playerName
+                value: playerName
             }));
+          $(".navbar").hide()
+          $("#start-game").removeClass("disabled")
         }
     });
 
     $("#start-game").click(function() {
         ws.send(JSON.stringify({
             action: 'ready',
-            data: hasGrantStart
+            value: hasGrantStart
         }));
     });
 });
 
 ws.onmessage = function (evt) {
     var obj = JSON.parse(evt.data)
-    if (obj.action == "connect" || obj.action == "disconnect") {
-        refreshUserList(obj.data);
-    } else if (obj.action == "logIn") {
-        refreshUserList(obj.data);
-        $(".navbar").hide()
-        $("#start-game").removeClass("disabled")
+    if (obj.action == "playerList") {
+        refreshUserList(obj.value);
     } else if (obj.action == "ready") {
         $("#ready-btn").hide()
     } else if (obj.action == "grantStart") {
@@ -43,7 +41,7 @@ ws.onmessage = function (evt) {
     } else if (obj.action == "startGame") {
         $("#start-game").hide()
         gameInProgress = true;
-        var arr = JSON.parse(obj.data)
+        var arr = JSON.parse(obj.value)
         for (var i = 0; i < arr.length; i++) {
             var colorIndex = arr[i]
             if (colorIndex > 0) {
@@ -51,9 +49,9 @@ ws.onmessage = function (evt) {
             }
         }
     } else if (obj.action == "cellClick") {
-        $("#cell_" + obj.data).css("background-color", "grey");
+        $("#cell_" + obj.value).css("background-color", "grey");
     } else if (obj.action == "winner") {
-        alert("We have a winner: " + obj.data)
+        alert("We have a winner: " + obj.value)
     } else if (obj.action == "gameOver") {
         alert("Please start a new game!")
     }
@@ -62,7 +60,7 @@ ws.onmessage = function (evt) {
 function cellClicked(cellId) {
     sendToServer(JSON.stringify({
         action: 'cellClick',
-        data: cellId
+        value: cellId
     }));
 }
 

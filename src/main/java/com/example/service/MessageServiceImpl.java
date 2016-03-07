@@ -6,9 +6,9 @@ import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import com.example.bean.ServerMessage;
 import com.example.bean.client.ClientAction;
-import com.example.bean.client.ClientMessage;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 
 import reactor.rx.action.Control;
 import skeleton.bean.game.Cell;
@@ -17,30 +17,35 @@ import skeleton.service.MessageService;
 
 public class MessageServiceImpl implements MessageService {
 
-	private final ObjectMapper mapper = new ObjectMapper();
-	private final List<Player> players = new ArrayList<>();
+	private final Gson mapper;
+	private final List<Player> players;
+
+	public MessageServiceImpl() {
+		mapper = new Gson();
+		players = new ArrayList<>();
+	}
 
 	@Override
 	public void broadcastPlayerList(List<Player> playerList) {
-		ClientMessage<List<Player>> message = ClientMessage.create(ClientAction.playerList, playerList);
+		ServerMessage message = ServerMessage.create(ClientAction.playerList, playerList);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastGameTable(List<Cell> gameData) {
-		ClientMessage<List<Cell>> message = ClientMessage.create(ClientAction.gameData, gameData);
+		ServerMessage message = ServerMessage.create(ClientAction.gameData, gameData);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastMarkedCell(Cell cell) {
-		ClientMessage<Cell> message = ClientMessage.create(ClientAction.markedCell, cell);
+		ServerMessage message = ServerMessage.create(ClientAction.markedCell, cell);
 		broadcast(message);
 	}
 
 	@Override
 	public void broadcastWinner(Player winner) {
-		ClientMessage<Player> message = ClientMessage.create(ClientAction.winner, winner);
+		ServerMessage message = ServerMessage.create(ClientAction.winner, winner);
 		broadcast(message);
 	}
 
@@ -52,29 +57,29 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
 	public void alert(Player player, String message) {
-		sendMessage(player.getSession(), ClientMessage.createAlert(message));
+		sendMessage(player.getSession(), ServerMessage.createAlert(message));
 	}
 
     @Override
 	public void log(Player player, String message) {
-    	sendMessage(player.getSession(), ClientMessage.createLog(message));
+    	sendMessage(player.getSession(), ServerMessage.createLog(message));
 	}
 
 	@Override
 	public void sendPlayerList(Session session, List<Player> playerList) {
-		ClientMessage<List<Player>> playerListMessage = ClientMessage.create(ClientAction.playerList, playerList);
+		ServerMessage playerListMessage = ServerMessage.create(ClientAction.playerList, playerList);
 		broadcast(playerListMessage);
 	}
 
-	private void broadcast(ClientMessage<?> message) {
+	private void broadcast(ServerMessage message) {
 		players.stream().forEach(player -> {
 			sendMessage(player.getSession(), message);
 		});
 	}
 
-	private void sendMessage(Session session, ClientMessage<?> clientMessage) {
+	private <T> void sendMessage(Session session, ServerMessage clientMessage) {
 		try {
-			String message = mapper.writeValueAsString(clientMessage);
+			String message = mapper.toJson(clientMessage);
 			if (session.isOpen()) {
 				session.getRemote().sendString(message);
 			}
@@ -85,13 +90,13 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public void alert(Session session, String message) {
-		ClientMessage<String> clientMessage = ClientMessage.createAlert(message);
+		ServerMessage clientMessage = ServerMessage.createAlert(message);
 		sendMessage(session, clientMessage);
 	}
 
 	@Override
 	public void log(Session session, String message) {
-		ClientMessage<String> clientMessage = ClientMessage.createLog(message);
+		ServerMessage clientMessage = ServerMessage.createLog(message);
 		sendMessage(session, clientMessage);
 	}
 }

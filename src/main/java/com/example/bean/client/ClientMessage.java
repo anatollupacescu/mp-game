@@ -1,12 +1,14 @@
 package com.example.bean.client;
 
-public class ClientMessage<T> {
+public class ClientMessage {
 
 	private ClientAction action;
-	private T value;
+	private String value;
 
-	private ClientMessage(ClientAction action, T value) {
-		super();
+	public ClientMessage() {
+	}
+	
+	public ClientMessage(ClientAction action, String value) {
 		this.action = action;
 		this.value = value;
 	}
@@ -15,23 +17,27 @@ public class ClientMessage<T> {
 		return action;
 	}
 
-	public Object getValue() {
+	public String getValue() {
 		return value;
 	}
 
-	public T getValue(Class<T> clazz) {
-		return value;
+	public void setAction(ClientAction action) {
+		this.action = action;
 	}
 
-	public static <T> ClientMessage<T> create(ClientAction action, T value) {
-		return new ClientMessage<T>(action, value);
+	public void setValue(String value) {
+		this.value = value;
 	}
 
-	public static <T> ClientMessage<T> createAlert(T value) {
-		return new ClientMessage<T>(ClientAction.alert, value);
+	public static ClientMessage create(ClientAction action, String value) {
+		return new ClientMessage(action, value);
 	}
 
-	public static <T> ClientMessage<T> createLog(T string) {
-		return new ClientMessage<T>(ClientAction.log, string);
+	public static ClientMessage createAlert(String value) {
+		return new ClientMessage(ClientAction.alert, value);
+	}
+
+	public static ClientMessage createLog(String string) {
+		return new ClientMessage(ClientAction.log, string);
 	}
 }

@@ -14,8 +14,8 @@ public class GameServiceImpl implements GameService {
 	private Game game;
 
 	@Override
-	public Player getWinner() {
-		return game.getWinner().get();
+	public Optional<Player> getWinner() {
+		return game.getWinner();
 	}
 
 	@Override
@@ -39,8 +39,8 @@ public class GameServiceImpl implements GameService {
 	}
 
 	@Override
-	public void markCell(Cell cell) {
-		game.markCell(cell);
+	public int markCell(Cell cell) {
+		return game.markCell(cell);
 	}
 
 	@Override
@@ -52,5 +52,10 @@ public class GameServiceImpl implements GameService {
 			return Optional.empty();
 		}
 		return game.getCellByIndex(index);
+	}
+
+	@Override
+	public void dropPlayer(Player player) {
+		game.dropPlayer(player);
 	}
 }

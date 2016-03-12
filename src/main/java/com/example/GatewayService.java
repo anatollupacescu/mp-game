@@ -20,7 +20,7 @@ public class GatewayService {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static final PlayerService playerService = new PlayerServiceImpl();
-	private static final MessageService messageService = new MessageServiceImpl();
+	private static final MessageService messageService = new MessageServiceImpl(playerService);
 	private static final Main main = new MainStage(playerService, new GameServiceImpl(), messageService);
 
 	public static void handleClientMessage(String message, Session session) {

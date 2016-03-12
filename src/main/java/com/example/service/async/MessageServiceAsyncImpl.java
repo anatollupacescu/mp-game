@@ -32,13 +32,13 @@ public class MessageServiceAsyncImpl implements MessageService {
 
 	@Override
 	public void broadcastGameTable(List<Cell> gameData) {
-		ServerMessage message = ServerMessage.create(ClientAction.gameData, gameData);
+		ServerMessage message = ServerMessage.create(ClientAction.startGame, gameData);
 		broadcast(message);
 	}
 
 	@Override
-	public void broadcastMarkedCell(Cell cell) {
-		ServerMessage message = ServerMessage.create(ClientAction.markedCell, cell);
+	public void broadcastMarkedCell(int cell) {
+		ServerMessage message = ServerMessage.create(ClientAction.cellClick, cell);
 		broadcast(message);
 	}
 

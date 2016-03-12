@@ -1,74 +1,80 @@
 var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
-var hasGrantStart = false;
+//var hasGrantStart = false;
 
 var colors = [null, "orange", "indianred", "olivedrab", "mediumseagreen", "mediumorchid", "limegreen", "lightslategray"]
 var gameInProgress = false;
+var playerName;
 
 $(document).ready(function () {
     $("#sign-in").click(function () {
-        var playerName = $("#playerName").val().trim()
+        playerName = $("#playerName").val().trim()
         if(!playerName) {
             alert("Please enter a valid name")
             $("#playerName").val("")
             $("#playerName").focus()
         } else {
-            ws.send(JSON.stringify({
-                action: 'logIn',
-                value: playerName
-            }));
-          $(".navbar").hide()
-          $("#start-game").removeClass("disabled")
+            sendToServer('logIn', playerName)
+            $(".navbar").hide()
+            $("#start-game").removeClass("disabled")
         }
     });
 
     $("#start-game").click(function() {
-        ws.send(JSON.stringify({
-            action: 'ready',
-            value: hasGrantStart
-        }));
+        sendToServer('ready', null);
     });
 });
 
 ws.onmessage = function (evt) {
     var obj = JSON.parse(evt.data)
-    if (obj.action == "playerList") {
-        refreshUserList(obj.value);
-    } else if (obj.action == "ready") {
-        $("#ready-btn").hide()
-    } else if (obj.action == "grantStart") {
-        $("#start-game").text("Start game")
-        hasGrantStart = true;
+    if (obj.action == "log") {
+        console.log(obj.value)
+    } else if (obj.action == "alert") {
+        alert(obj.value)
+    } else if (obj.action == "playerList") {
+        refreshUserList(obj.value);    
+//    } else if (obj.action == "grantStart") {
+//        $("#start-gamesta").text("Start game")
+//        hasGrantStart = true;
     } else if (obj.action == "startGame") {
         $("#start-game").hide()
         gameInProgress = true;
-        var arr = JSON.parse(obj.value)
+        var arr = obj.value
         for (var i = 0; i < arr.length; i++) {
-            var colorIndex = arr[i]
-            if (colorIndex > 0) {
-                $("#cell_" + i).css("background-color", colors[colorIndex]);
+            var player = arr[i].player;
+            if(player != null) {
+                var colorIndex = player.color
+                if (colorIndex > 0) {
+                    $("#cell_" + i).css("background-color", colors[colorIndex]);
+                }
             }
         }
     } else if (obj.action == "cellClick") {
         $("#cell_" + obj.value).css("background-color", "grey");
     } else if (obj.action == "winner") {
-        alert("We have a winner: " + obj.value)
+        alert("We have a winner: " + obj.value.name)
     } else if (obj.action == "gameOver") {
         alert("Please start a new game!")
     }
 };
-
 function cellClicked(cellId) {
-    sendToServer(JSON.stringify({
-        action: 'cellClick',
-        value: cellId
-    }));
+    sendToServer('cellClick', cellId);
 }
 
 function refreshUserList(userList) {
     if (userList.length > 0) {
         $('#player-list').empty();
         for (var i = 0; i < userList.length; i++) {
-            $("#player-list").append("<li class='list-group-item' style='background-color: " + colors[userList[i].color] + "'>" + userList[i].name + "</li>");
+            var player = userList[i];
+            var name = player.name;
+            if(name === playerName) {
+                if(player.ready) {
+                    $("#ready-btn").hide()
+                }
+            }
+            if(player.ready) {
+                name += " (ready)";
+            }
+            $("#player-list").append("<li class='list-group-item' style='background-color: " + colors[player.color] + "'>" + name + "</li>");
         }
     }
 }
@@ -89,6 +95,10 @@ ws.onerror = function (err) {
 };
 
 // sends msg to the server over websocket
-function sendToServer(msg) {
+function sendToServer(action, value) {
+    var msg = JSON.stringify({
+        action: action,
+        value: value
+    })
     ws.send(msg);
 }

@@ -36,8 +36,16 @@ public class Game {
 		Collections.shuffle(cells);
 	}
 
-	public void markCell(Cell c) {
-		getCells().stream().filter(cell -> cell.equals(c)).forEach(cell -> cell.check());
+	public int markCell(Cell c) {
+		for(int i = 0; i < cells.size(); i++) {
+			Cell localCell = cells.get(i);
+			if(localCell.equals(c)) {
+				localCell.check();
+				localCell.getPlayer().decrementCellCount();
+				return i;
+			}
+		}
+		throw new IllegalStateException("Cell not found");
 	}
 
 	public Optional<Player> getWinner() {
@@ -59,5 +67,9 @@ public class Game {
 	
 	public List<Cell> getCells() {
 		return cells;
+	}
+
+	public void dropPlayer(Player player) {
+		players.remove(player);
 	}
 }

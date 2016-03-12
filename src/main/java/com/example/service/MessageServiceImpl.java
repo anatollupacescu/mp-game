@@ -1,7 +1,6 @@
 package com.example.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -14,15 +13,15 @@ import reactor.rx.action.Control;
 import skeleton.bean.game.Cell;
 import skeleton.bean.player.Player;
 import skeleton.service.MessageService;
+import skeleton.service.PlayerService;
 
 public class MessageServiceImpl implements MessageService {
 
-	private final Gson mapper;
-	private final List<Player> players;
+	private final Gson mapper = new Gson();
+	private final PlayerService playerService;
 
-	public MessageServiceImpl() {
-		mapper = new Gson();
-		players = new ArrayList<>();
+	public MessageServiceImpl(PlayerService playerService) {
+		this.playerService = playerService;
 	}
 
 	@Override
@@ -33,13 +32,13 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public void broadcastGameTable(List<Cell> gameData) {
-		ServerMessage message = ServerMessage.create(ClientAction.gameData, gameData);
+		ServerMessage message = ServerMessage.create(ClientAction.startGame, gameData);
 		broadcast(message);
 	}
 
 	@Override
-	public void broadcastMarkedCell(Cell cell) {
-		ServerMessage message = ServerMessage.create(ClientAction.markedCell, cell);
+	public void broadcastMarkedCell(int cell) {
+		ServerMessage message = ServerMessage.create(ClientAction.cellClick, cell);
 		broadcast(message);
 	}
 
@@ -51,7 +50,6 @@ public class MessageServiceImpl implements MessageService {
 
 	@Override
 	public Control registerSession(Player player) {
-		players.add(player);
 		return null;
 	}
 
@@ -72,7 +70,7 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	private void broadcast(ServerMessage message) {
-		players.stream().forEach(player -> {
+		playerService.getPlayerList().stream().forEach(player -> {
 			sendMessage(player.getSession(), message);
 		});
 	}

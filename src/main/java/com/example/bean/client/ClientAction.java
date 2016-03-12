@@ -2,7 +2,9 @@ package com.example.bean.client;
 
 public enum ClientAction {
 
-	/* client --> */logIn, ready, cellClick,
+	/* client --> */logIn, ready, 
 	
-	playerList, gameData, markedCell, winner, alert, log /* server */, 
+	playerList, startGame, winner, alert, log /* server */,
+	
+	cellClick,
 }

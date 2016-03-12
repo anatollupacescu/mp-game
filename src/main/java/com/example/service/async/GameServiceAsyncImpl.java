@@ -31,7 +31,7 @@ public class GameServiceAsyncImpl implements GameService {
 	}
 
 	@Override
-	public Player getWinner() {
+	public Optional<Player> getWinner() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -57,8 +57,9 @@ public class GameServiceAsyncImpl implements GameService {
 	}
 
 	@Override
-	public void markCell(Cell cell) {
+	public int markCell(Cell cell) {
 		processor.onNext(GameMessage.markCell(cell));
+		return 0;
 	}
 
 	@Override
@@ -70,5 +71,11 @@ public class GameServiceAsyncImpl implements GameService {
 			return Optional.empty();
 		}
 		return game.getCellByIndex(index);
+	}
+
+	@Override
+	public void dropPlayer(Player player) {
+		// TODO Auto-generated method stub
+		
 	}
 }

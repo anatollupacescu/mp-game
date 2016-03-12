@@ -66,7 +66,7 @@ public class MessageServiceImpl implements MessageService {
 	@Override
 	public void sendPlayerList(Session session, List<Player> playerList) {
 		ServerMessage playerListMessage = ServerMessage.create(ClientAction.playerList, playerList);
-		broadcast(playerListMessage);
+		sendMessage(session, playerListMessage);
 	}
 
 	private void broadcast(ServerMessage message) {

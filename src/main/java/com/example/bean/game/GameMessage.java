@@ -21,14 +21,14 @@ public class GameMessage<T> {
     }
 
     public static GameMessage<Cell> markCell(Cell cell) {
-        return new GameMessage(GameAction.cellClick, cell);
+        return new GameMessage<Cell>(GameAction.cellClick, cell);
     }
 
     public static GameMessage<?> stopGame() {
-        return new GameMessage(GameAction.stopGame, null);
+        return new GameMessage<Object>(GameAction.stopGame, null);
     }
 
 	public static GameMessage<?> startGame(List<Player> playerList) {
-		return new GameMessage(GameAction.startGame, playerList);
+		return new GameMessage<Object>(GameAction.startGame, playerList);
 	}
 }

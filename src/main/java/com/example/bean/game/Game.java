@@ -40,8 +40,10 @@ public class Game {
 		for(int i = 0; i < cells.size(); i++) {
 			Cell localCell = cells.get(i);
 			if(localCell.equals(c)) {
-				localCell.check();
-				localCell.getPlayer().decrementCellCount();
+				if(!localCell.isChecked()) {
+					localCell.check();
+					localCell.getPlayer().decrementCellCount();
+				}
 				return i;
 			}
 		}

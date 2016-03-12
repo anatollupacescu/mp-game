@@ -4,6 +4,7 @@ var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
 var colors = [null, "orange", "indianred", "olivedrab", "mediumseagreen", "mediumorchid", "limegreen", "lightslategray"]
 var gameInProgress = false;
 var playerName;
+var playerReady = false;
 
 $(document).ready(function () {
     $("#sign-in").click(function () {
@@ -21,6 +22,7 @@ $(document).ready(function () {
 
     $("#start-game").click(function() {
         sendToServer('ready', null);
+        playerReady = true;
     });
 });
 
@@ -31,10 +33,7 @@ ws.onmessage = function (evt) {
     } else if (obj.action == "alert") {
         alert(obj.value)
     } else if (obj.action == "playerList") {
-        refreshUserList(obj.value);    
-//    } else if (obj.action == "grantStart") {
-//        $("#start-gamesta").text("Start game")
-//        hasGrantStart = true;
+        refreshUserList(obj.value);
     } else if (obj.action == "startGame") {
         $("#start-game").hide()
         gameInProgress = true;
@@ -52,10 +51,9 @@ ws.onmessage = function (evt) {
         $("#cell_" + obj.value).css("background-color", "grey");
     } else if (obj.action == "winner") {
         alert("We have a winner: " + obj.value.name)
-    } else if (obj.action == "gameOver") {
-        alert("Please start a new game!")
     }
 };
+
 function cellClicked(cellId) {
     sendToServer('cellClick', cellId);
 }
@@ -63,6 +61,7 @@ function cellClicked(cellId) {
 function refreshUserList(userList) {
     if (userList.length > 0) {
         $('#player-list').empty();
+        var playersReady = 0;
         for (var i = 0; i < userList.length; i++) {
             var player = userList[i];
             var name = player.name;
@@ -71,10 +70,14 @@ function refreshUserList(userList) {
                     $("#ready-btn").hide()
                 }
             }
-            if(player.ready) {
+            if(player.ready && !gameInProgress) {
                 name += " (ready)";
+                playersReady++;
             }
             $("#player-list").append("<li class='list-group-item' style='background-color: " + colors[player.color] + "'>" + name + "</li>");
+        }
+        if(playersReady === 1 && !playerReady) {
+          $("#start-game").text("Start game")
         }
     }
 }

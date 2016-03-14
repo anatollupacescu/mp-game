@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import com.example.bean.game.Game;
 
-import skeleton.bean.game.Cell;
-import skeleton.bean.player.Player;
+import skeleton.bean.Cell;
+import skeleton.bean.Player;
 import skeleton.service.GameService;
 
 public class GameServiceImpl implements GameService {

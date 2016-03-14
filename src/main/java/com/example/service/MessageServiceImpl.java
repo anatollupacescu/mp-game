@@ -9,9 +9,8 @@ import com.example.bean.ServerMessage;
 import com.example.bean.client.ClientAction;
 import com.google.gson.Gson;
 
-import reactor.rx.action.Control;
-import skeleton.bean.game.Cell;
-import skeleton.bean.player.Player;
+import skeleton.bean.Cell;
+import skeleton.bean.Player;
 import skeleton.service.MessageService;
 import skeleton.service.PlayerService;
 
@@ -49,11 +48,6 @@ public class MessageServiceImpl implements MessageService {
 	}
 
 	@Override
-	public Control registerSession(Player player) {
-		return null;
-	}
-
-    @Override
 	public void alert(Player player, String message) {
 		sendMessage(player.getSession(), ServerMessage.createAlert(message));
 	}

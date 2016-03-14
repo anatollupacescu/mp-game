@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import com.example.bean.game.Game;
 
-import skeleton.bean.player.Player;
+import skeleton.bean.Player;
 
 public class GameTest {
 

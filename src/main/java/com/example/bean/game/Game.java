@@ -1,13 +1,13 @@
 package com.example.bean.game;
 
-import skeleton.bean.game.Cell;
-import skeleton.bean.player.Player;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import skeleton.bean.Cell;
+import skeleton.bean.Player;
 
 public class Game {
 

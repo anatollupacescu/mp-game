@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-import skeleton.bean.player.Player;
+import skeleton.bean.Player;
 import skeleton.service.PlayerService;
 
 public class PlayerServiceImpl implements PlayerService {

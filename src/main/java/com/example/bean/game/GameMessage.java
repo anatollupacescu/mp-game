@@ -2,8 +2,8 @@ package com.example.bean.game;
 
 import java.util.List;
 
-import skeleton.bean.game.Cell;
-import skeleton.bean.player.Player;
+import skeleton.bean.Cell;
+import skeleton.bean.Player;
 
 public class GameMessage<T> {
 

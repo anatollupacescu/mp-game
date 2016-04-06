@@ -5,39 +5,35 @@ import java.util.Optional;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-import com.example.bean.client.ClientMessage;
-import com.example.service.GameServiceImpl;
-import com.example.service.MessageServiceImpl;
-import com.example.service.PlayerServiceImpl;
+import com.example.message.ClientMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import skeleton.Main;
-import skeleton.service.MessageService;
-import skeleton.service.PlayerService;
-import skeleton.stage.MainStage;
+import lol.Model;
+import lol.service.InMemoryGame;
+import lol.service.InMemoryPlayerStore;
+import lol.service.RandomShuffler;
 
 public class GatewayService {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
-	private static final PlayerService playerService = new PlayerServiceImpl();
-	private static final MessageService messageService = new MessageServiceImpl(playerService);
-	private static final Main main = new MainStage(playerService, new GameServiceImpl(), messageService);
+	private static final Model main = new Model(new InMemoryPlayerStore(), new InMemoryGame(new RandomShuffler()), 64);
 
 	public static void handleClientMessage(String message, Session session) {
 		parseClientMessage(message).ifPresent(clientMessage -> {
 			String data = clientMessage.getValue();
+			WsSession wsSession = new WsSession(session);
 			switch (clientMessage.getAction()) {
 			case logIn:
-				main.playerLogIn(session, data);
+				main.name(wsSession, data);
 				break;
 			case ready:
-				main.playerReady(session);
+				main.ready(wsSession);
 				break;
 			case cellClick:
-				main.playerClickedCell(session, data);
+				main.cell(wsSession, data);
 				break;
 			default:
-				messageService.log(session, "Unknown action");
+				throw new RuntimeException();
 			}
 		});
 	}
@@ -53,11 +49,13 @@ public class GatewayService {
 
 	/* load page */
 	public static void sessionCreated(Session session) {
-		messageService.sendPlayerList(session, playerService.getPlayerList());
+		WsSession wsSession = new WsSession(session);
+		main.connect(wsSession);
 	}
 
 	/* disconnect */
 	public static void playerDisconnect(Session session) {
-		main.playerLogOut(session);
+		WsSession wsSession = new WsSession(session);
+		main.disconnect(wsSession);
 	}
 }

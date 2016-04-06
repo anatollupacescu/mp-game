@@ -1,5 +1,4 @@
 var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
-//var hasGrantStart = false;
 
 var colors = [null, "orange", "indianred", "olivedrab", "mediumseagreen", "mediumorchid", "limegreen", "lightslategray"]
 var gameInProgress = false;
@@ -39,7 +38,7 @@ ws.onmessage = function (evt) {
         gameInProgress = true;
         var arr = obj.value
         for (var i = 0; i < arr.length; i++) {
-            var player = arr[i].player;
+            var player = arr[i].owner;
             if(player != null) {
                 var colorIndex = player.color
                 if (colorIndex > 0) {
@@ -48,9 +47,11 @@ ws.onmessage = function (evt) {
             }
         }
     } else if (obj.action == "cellClick") {
-        $("#cell_" + obj.value).css("background-color", "grey");
+        $("#cell_" + obj.value.id).css("background-color", "grey");
     } else if (obj.action == "winner") {
-        alert("We have a winner: " + obj.value.name)
+        alert("We have a winner: " + obj.value.owner.name)
+    } else if (obj.action == "gameOver") {
+        alert("Please start a new game!")
     }
 };
 
@@ -66,11 +67,11 @@ function refreshUserList(userList) {
             var player = userList[i];
             var name = player.name;
             if(name === playerName) {
-                if(player.ready) {
+                if(player.status === "ready") {
                     $("#ready-btn").hide()
                 }
             }
-            if(player.ready && !gameInProgress) {
+            if(player.status === "ready" && !gameInProgress) {
                 name += " (ready)";
                 playersReady++;
             }

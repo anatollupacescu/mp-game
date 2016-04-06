@@ -1,6 +1,4 @@
-package com.example.bean;
-
-import com.example.bean.client.ClientAction;
+package com.example.message;
 
 public class ServerMessage {
 

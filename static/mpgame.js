@@ -6,6 +6,7 @@ var playerName;
 var playerReady = false;
 
 $(document).ready(function () {
+    $("#ready-btn").hide()
     $("#sign-in").click(function () {
         playerName = $("#playerName").val().trim()
         if(!playerName) {
@@ -34,7 +35,7 @@ ws.onmessage = function (evt) {
     } else if (obj.action == "playerList") {
         refreshUserList(obj.value);
     } else if (obj.action == "startGame") {
-        $("#start-game").hide()
+        $("#start-game").toggle()
         gameInProgress = true;
         var arr = obj.value
         for (var i = 0; i < arr.length; i++) {
@@ -49,7 +50,7 @@ ws.onmessage = function (evt) {
     } else if (obj.action == "cellClick") {
         $("#cell_" + obj.value.id).css("background-color", "grey");
     } else if (obj.action == "winner") {
-        alert("We have a winner: " + obj.value.owner.name)
+        alert("We have a winner: " + obj.value.name)
     } else if (obj.action == "gameOver") {
         alert("Please start a new game!")
     }
@@ -67,9 +68,9 @@ function refreshUserList(userList) {
             var player = userList[i];
             var name = player.name;
             if(name === playerName) {
-                if(player.status === "ready") {
-                    $("#ready-btn").hide()
-                }
+                if(player.status === "ready" || player.status === "standby") {
+                    $("#ready-btn").toggle()
+               }
             }
             if(player.status === "ready" && !gameInProgress) {
                 name += " (ready)";

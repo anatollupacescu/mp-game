@@ -16,7 +16,7 @@ import lol.service.RandomShuffler;
 public class GatewayService {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
-	private static final App main = new App(new InMemoryPlayerStore(), new InMemoryGame(new RandomShuffler()), 64);
+	private static final App main = new App(new InMemoryPlayerStore(), new InMemoryGame(new RandomShuffler()), 6);
 
 	public static void handleClientMessage(String message, Session session) {
 		parseClientMessage(message).ifPresent(clientMessage -> {

@@ -1,12 +1,9 @@
 var ws = new WebSocket("ws://127.0.0.1:8090/mpgame");
 
 var colors = [null, "orange", "indianred", "olivedrab", "mediumseagreen", "mediumorchid", "limegreen", "lightslategray"]
-var gameInProgress = false;
 var playerName;
-var playerReady = false;
 
 $(document).ready(function () {
-    $("#ready-btn").hide()
     $("#sign-in").click(function () {
         playerName = $("#playerName").val().trim()
         if(!playerName) {
@@ -35,8 +32,6 @@ ws.onmessage = function (evt) {
     } else if (obj.action == "playerList") {
         refreshUserList(obj.value);
     } else if (obj.action == "startGame") {
-        $("#start-game").toggle()
-        gameInProgress = true;
         var arr = obj.value
         for (var i = 0; i < arr.length; i++) {
             var player = arr[i].owner;
@@ -51,6 +46,9 @@ ws.onmessage = function (evt) {
         $("#cell_" + obj.value.id).css("background-color", "grey");
     } else if (obj.action == "winner") {
         alert("We have a winner: " + obj.value.name)
+        for(var i = 0; i < 64; i++) {
+            $("#cell_" + i).css("background-color", "white");
+        }
     } else if (obj.action == "gameOver") {
         alert("Please start a new game!")
     }
@@ -63,23 +61,13 @@ function cellClicked(cellId) {
 function refreshUserList(userList) {
     if (userList.length > 0) {
         $('#player-list').empty();
-        var playersReady = 0;
         for (var i = 0; i < userList.length; i++) {
             var player = userList[i];
             var name = player.name;
-            if(name === playerName) {
-                if(player.status === "ready" || player.status === "standby") {
-                    $("#ready-btn").toggle()
-               }
-            }
-            if(player.status === "ready" && !gameInProgress) {
+            if(player.status === "ready") {
                 name += " (ready)";
-                playersReady++;
             }
             $("#player-list").append("<li class='list-group-item' style='background-color: " + colors[player.color] + "'>" + name + "</li>");
-        }
-        if(playersReady === 1 && !playerReady) {
-          $("#start-game").text("Start game")
         }
     }
 }
